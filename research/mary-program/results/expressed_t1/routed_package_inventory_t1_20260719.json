@@ -1,0 +1,89 @@
+{
+  "owner": "OpenAI Codex",
+  "scope": "T1 expressed affect, routed face package inventory",
+  "signed": "2026-07-19",
+  "b2_prefix": "s3://Neuropeer/orcle/research/scaling_sota_head/routed_expressed_va/packaged/",
+  "completion_marker": "COMPLETE",
+  "results_json": {
+    "key": "results.json",
+    "sha256": "e75eeda650e471768c7ad14a567e00f167d04ec8a636d31516ad10a196f5a7b6"
+  },
+  "package_controls": [
+    {
+      "file": "COMPLETE",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "run.log",
+      "bytes": 884,
+      "sha256": "a348fc89fc539316ff97129ed7a7abb5c0d4113cf84a9377b1dce23433f057b5"
+    }
+  ],
+  "prediction_arrays": [
+    {
+      "file": "commercial_afew_va_to_veatic_seed17.npz",
+      "bytes": 75719,
+      "sha256": "fd3437ffdfdee1b72daa92fda7b7dca246c1b1c5d5ab1aba71c513b989f474dc"
+    },
+    {
+      "file": "commercial_afew_va_to_veatic_seed29.npz",
+      "bytes": 75747,
+      "sha256": "6c6000c7e8d190b2ac245aabb1d4fdee21fcbbcb7ae8d3283e63fe4343f2899f"
+    },
+    {
+      "file": "commercial_afew_va_to_veatic_seed43.npz",
+      "bytes": 75751,
+      "sha256": "db7cb2733c59d071738bb262d676eed5a9083ea080589d29134d7636c097303e"
+    },
+    {
+      "file": "commercial_veatic_to_afew_va_seed17.npz",
+      "bytes": 29620,
+      "sha256": "1bbacc532afbe83b766d0edcaf4defdc95cfcb37f9d6a3b315e0a489f4226e3a"
+    },
+    {
+      "file": "commercial_veatic_to_afew_va_seed29.npz",
+      "bytes": 29604,
+      "sha256": "c173c4db5755d14eee1e4d52b42cf16ea7558af6755789f31192fe65c4d56603"
+    },
+    {
+      "file": "commercial_veatic_to_afew_va_seed43.npz",
+      "bytes": 29629,
+      "sha256": "5684ac1e4b12e84347afc32210e6eadd35e632c31c383a1f111a9621390c6110"
+    }
+  ],
+  "commercial_code_checkpoints": [
+    {
+      "file": "commercial_afew_va_to_veatic_seed17.pt",
+      "bytes": 2159891,
+      "sha256": "61aac58cc0f455d2b26e54c0cbefa8b83d4b1a6c64774e8a45cd659711b1930c"
+    },
+    {
+      "file": "commercial_afew_va_to_veatic_seed29.pt",
+      "bytes": 2172947,
+      "sha256": "46b694a6c1f3203938075cb8511541b69bddd1d7cc549ff795778f9d0d64f855"
+    },
+    {
+      "file": "commercial_afew_va_to_veatic_seed43.pt",
+      "bytes": 2172947,
+      "sha256": "44a1cb64a7d3174999d3692714f0d48c68c307655d49e11ca9d3f5a8a1057754"
+    },
+    {
+      "file": "commercial_veatic_to_afew_va_seed17.pt",
+      "bytes": 2159891,
+      "sha256": "d90f43a493de961c163a9031c4b12f8dbd7e52d7d426f97ffc29f1e393313279"
+    },
+    {
+      "file": "commercial_veatic_to_afew_va_seed29.pt",
+      "bytes": 2172947,
+      "sha256": "533ab8aa0547bcd23bb44beec2bc6771530363e45b548bc579be6b7407616c7d"
+    },
+    {
+      "file": "commercial_veatic_to_afew_va_seed43.pt",
+      "bytes": 2160275,
+      "sha256": "808dd779a7d46f48936476d636aa5177a5b541c25a49f15ac3e6115a4d0d05d1"
+    }
+  ],
+  "rights_status": "Not commercially cleared: checkpoints are fitted using AFEW-VA and VEATIC supervision.",
+  "package_status": "RESEARCH_ARTIFACT_PRESENT_COMMERCIAL_DISTRIBUTION_REJECTED_PENDING_DATA_RIGHTS"
+}

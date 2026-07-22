@@ -1,0 +1,41 @@
+{
+  "dataset": "MPI Emotional Body Expressions Database",
+  "task": "T1 expressed body-motion acquisition audit",
+  "source": "https://doi.org/10.6084/m9.figshare.1220428",
+  "source_download": "https://ndownloader.figshare.com/files/1763862",
+  "source_license": "CC BY 4.0",
+  "downloaded_archive": "research_data/t1_mpi_embm/bvh.zip",
+  "downloaded_size_bytes": 50099276,
+  "downloaded_md5": "fceb078bafc1a0002fb7b0a3a81e3079",
+  "source_metadata_claim": "over 1440 motion capture files",
+  "local_zip_integrity": {
+    "local_file_headers": 289,
+    "bvh_files_recovered": 287,
+    "central_directory_headers": 0,
+    "end_of_central_directory_present": false,
+    "repaired_archive_test": "incomplete; 55067 bytes missing"
+  },
+  "recovered_scope": {
+    "actor_prefixes": ["AnBh", "DiMi"],
+    "n_actor_prefixes": 2,
+    "emotion_labels": [
+      "Amusement",
+      "Anger",
+      "Disgust",
+      "Fear",
+      "Joy",
+      "Neutral",
+      "Pride",
+      "Relief",
+      "Sadness",
+      "Shame",
+      "Surprise"
+    ],
+    "n_emotion_labels": 11,
+    "usable_for_subject_held_out_claim": false
+  },
+  "b2_archive": "s3://Neuropeer/orcle/research/scaling_sota_head/mpi_embm_t1/bvh.zip",
+  "disposition": "acquisition_integrity_failure; no benchmark or model result claimed",
+  "signed_by": "OpenAI Codex",
+  "date": "2026-07-19"
+}
