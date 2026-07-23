@@ -1,0 +1,65 @@
+{
+  "_comment": "Collapse ratios derived by plot_ood_transfer_matrix.py from the same real artifacts as the figure. 'denominator' names WHICH in-distribution test each ratio divides by: holding out whole clips and holding out the tail of a clip you trained on are different tests, and the official checkpoint only ever reported the latter.",
+  "ratios": {
+    "MARY-VL (trained AFEW-VA) -> VEATIC": {
+      "denominator": "novel-clip diagonal (clip-disjoint 5-fold)",
+      "axes": {
+        "valence": {
+          "in_distribution_r": 0.5956,
+          "ood_r": 0.374,
+          "retained_fraction": 0.6279
+        },
+        "arousal": {
+          "in_distribution_r": 0.5962,
+          "ood_r": 0.3245,
+          "retained_fraction": 0.5444
+        }
+      }
+    },
+    "MARY-VL (trained VEATIC) -> AFEW-VA": {
+      "denominator": "novel-clip diagonal (clip-disjoint 5-fold)",
+      "axes": {
+        "valence": {
+          "in_distribution_r": 0.3382,
+          "ood_r": 0.3059,
+          "retained_fraction": 0.9043
+        },
+        "arousal": {
+          "in_distribution_r": 0.4059,
+          "ood_r": 0.3292,
+          "retained_fraction": 0.8109
+        }
+      }
+    },
+    "Official VEATIC ckpt -> AFEW-VA": {
+      "denominator": "official's own split (last 30% of clips it trained on)",
+      "axes": {
+        "valence": {
+          "in_distribution_r": 0.5642,
+          "ood_r": 0.0098,
+          "retained_fraction": 0.0173
+        },
+        "arousal": {
+          "in_distribution_r": 0.4505,
+          "ood_r": 0.0802,
+          "retained_fraction": 0.178
+        }
+      }
+    },
+    "MARY-VL (trained VEATIC) -> AFEW-VA [protocol-matched denominator]": {
+      "denominator": "official's own split, applied to MARY (train first 70% of each clip, test last 30%) -- the ONLY apples-to-apples denominator vs the official checkpoint",
+      "axes": {
+        "valence": {
+          "in_distribution_r": 0.6299,
+          "ood_r": 0.3059,
+          "retained_fraction": 0.4856
+        },
+        "arousal": {
+          "in_distribution_r": 0.632,
+          "ood_r": 0.3292,
+          "retained_fraction": 0.5208
+        }
+      }
+    }
+  }
+}

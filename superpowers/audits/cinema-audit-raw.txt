@@ -1,0 +1,1282 @@
+{
+  "summary": "Deep, file:line-cited audit of the BrainVI cinema + OpenCut system: what works, what is tested, what is broken, gaps toward the agentic neural editor",
+  "agentCount": 6,
+  "logs": [],
+  "result": {
+    "findings": [
+      {
+        "component": "Cinema Studio + OpenCut iframe bridge (control plane)",
+        "summary": "The BrainVI Cinema Studio is a postMessage-based control layer that allows Mary (in the chat suite) to command an embedded OpenCut editor iframe to load clips, add text overlays, set audio, and seek the playhead. The bridge is architecturally sound with proper origin validation, SSRF guards, and test coverage. However, it is a demo-only system: it exposes exactly 5 basic commands (PING, LOAD_CLIPS, ADD_TEXT, SET_AUDIO, SEEK), lacks any neural-driven advice loop (analyze→advise→apply→re-score→lift), and does not integrate with true post-production operations (trim/split/delete, color/effects, volume dynamics, transitions, render/export). The Present demo uses cached MARY Nano 1.1 data, not live scoring. For real agentic video editing, the bridge must be extended 10-15x with film-craft commands and a feedback loop wiring neural metrics (arousal, attention, resonance) to specific edit suggestions with proof-of-improvement.",
+        "works": [
+          {
+            "item": "Cross-origin postMessage bridge with origin validation (SUITE_ORIGIN hardcoded)",
+            "evidence": "brainvi-bridge.ts:31,301"
+          },
+          {
+            "item": "LOAD_CLIPS async flow: fetch→process→media-register→timeline-insert",
+            "evidence": "brainvi-bridge.ts:79-152"
+          },
+          {
+            "item": "ADD_TEXT with optional start/duration defaults to editor defaults",
+            "evidence": "brainvi-bridge.ts:159-189, bridge.test.ts:64-72"
+          },
+          {
+            "item": "SEEK moves playhead via EditorCore.playback.seek()",
+            "evidence": "brainvi-bridge.ts:244-246"
+          },
+          {
+            "item": "SSRF guard on clip_url, audio_url rejects 127.0.0.1, 10.0.0.5, link-local",
+            "evidence": "executor.ts:567-569, studio-edit.test.ts:30-34,48-51"
+          },
+          {
+            "item": "Round-trip handshake: editor posts BRIDGE_READY on mount, suite resolves ready promise",
+            "evidence": "brainvi-bridge.ts:317, bridge.ts:50-60"
+          },
+          {
+            "item": "StudioChatModal receives tool_result.data.bridge commands from LLM tool_use and forwards to iframe",
+            "evidence": "StudioChatModal.tsx:100-104"
+          },
+          {
+            "item": "Embed guard: ?embed=1 or Sec-Fetch-Dest=iframe gates non-embedded redirects to suite",
+            "evidence": "proxy.ts:15-30, brainvi-bridge-mount.tsx:13-24"
+          },
+          {
+            "item": "Project selection on bare /editor: reuse most-recent or create new",
+            "evidence": "page.tsx:65-81"
+          },
+          {
+            "item": "The Present MARY Nano 1.1 demo serves cached report with 81924 fsaverage6 vertices",
+            "evidence": "executor.ts:109-116, the-present.test.ts:19-27"
+          }
+        ],
+        "tested": [
+          {
+            "item": "Bridge ready handshake resolves on BRIDGE_READY from editor origin",
+            "test_file": "bridge.test.ts:23-30",
+            "passing": "passing"
+          },
+          {
+            "item": "Wrong-origin messages are dropped (drop check)",
+            "test_file": "bridge.test.ts:32-40",
+            "passing": "passing"
+          },
+          {
+            "item": "Message listener subscribe/unsubscribe toggles receipt",
+            "test_file": "bridge.test.ts:42-52",
+            "passing": "passing"
+          },
+          {
+            "item": "send() posts command to editor origin with exact payload",
+            "test_file": "bridge.test.ts:54-62",
+            "passing": "passing"
+          },
+          {
+            "item": "ADD_TEXT command includes text and optional startSec/durationSec",
+            "test_file": "bridge.test.ts:64-72",
+            "passing": "passing"
+          },
+          {
+            "item": "destroy() removes event listener",
+            "test_file": "bridge.test.ts:74-81",
+            "passing": "passing"
+          },
+          {
+            "item": "studioEdit(add_text) returns ADD_TEXT with text",
+            "test_file": "studio-edit.test.ts:11-17",
+            "passing": "passing"
+          },
+          {
+            "item": "studioEdit(add_text) carries optional start_sec/duration_sec",
+            "test_file": "studio-edit.test.ts:19-22",
+            "passing": "passing"
+          },
+          {
+            "item": "studioEdit(seek) returns SEEK command",
+            "test_file": "studio-edit.test.ts:24-28",
+            "passing": "passing"
+          },
+          {
+            "item": "studioEdit(load_clip) rejects loopback URLs (127.0.0.1 guard)",
+            "test_file": "studio-edit.test.ts:30-34",
+            "passing": "passing"
+          },
+          {
+            "item": "studioEdit(load_clip) accepts public HTTPS URLs",
+            "test_file": "studio-edit.test.ts:36-46",
+            "passing": "passing"
+          },
+          {
+            "item": "studioEdit(set_audio) rejects private-range URLs (10.0.0.x guard)",
+            "test_file": "studio-edit.test.ts:48-51",
+            "passing": "passing"
+          },
+          {
+            "item": "studioEdit(set_audio) accepts public HTTPS URLs",
+            "test_file": "studio-edit.test.ts:53-57",
+            "passing": "passing"
+          },
+          {
+            "item": "studioEdit(unknown action) returns failure",
+            "test_file": "studio-edit.test.ts:59-62",
+            "passing": "passing"
+          },
+          {
+            "item": "The Present report has model='MARY Nano 1.1', atlas='fsaverage6', n_vertices=81924",
+            "test_file": "the-present.test.ts:19-27",
+            "passing": "passing"
+          },
+          {
+            "item": "The Present curves match expected length (174 TRs)",
+            "test_file": "the-present.test.ts:24-25",
+            "passing": "passing"
+          }
+        ],
+        "untested_or_broken": [
+          {
+            "item": "No neural scoring of edited timeline before returning to user (no SCORE_EDITED command)",
+            "severity": "CRITICAL",
+            "evidence": "bridge.ts:13-18 (StudioCommand union lacks score-related command)"
+          },
+          {
+            "item": "No commands for post-production essentials: TRIM_ELEMENT, SPLIT_ELEMENT, DELETE_ELEMENT, SET_VOLUME, ADD_FADE, ADD_TRANSITION, GRADE_COLOR",
+            "severity": "CRITICAL",
+            "evidence": "bridge.ts:13-18 (only PING, LOAD_CLIPS, ADD_TEXT, SET_AUDIO, SEEK); TimelineManager has 25+ commands but bridge exposes 5"
+          },
+          {
+            "item": "No neural-to-edit mapping: arousal peak → could suggest cut/trim; attention drop → could suggest transition; emotional resonance → could suggest regrade or pacing",
+            "severity": "CRITICAL",
+            "evidence": "executor.ts (no advice generation); MARY_SYSTEM_PROMPT (no edit-suggestion prompts); no mapping layer between CinemaReport metrics and StudioCommand generation"
+          },
+          {
+            "item": "The Present is a cached demo, not live inference; real-time video editing requires live MARY scoring",
+            "severity": "CRITICAL",
+            "evidence": "executor.ts:109-116 (resolveDemoFilm short-circuit), mary-nano-cinema-demo-spec.md §1 ('cached for demo'); real scoring path requires RunPod serverless (deferred to Slice 2)"
+          },
+          {
+            "item": "edit_scene tool (V2V score→edit→re-score loop) exists but is never invoked from studio_edit; edited clips cannot flow back into the timeline",
+            "severity": "HIGH",
+            "evidence": "executor.ts:407-555 (edit_scene exists, returns CinemaCompare with edited_clip_url, before/after scores); but studio_edit does not invoke it, no APPLY_EDITED_CLIP command exists"
+          },
+          {
+            "item": "No RENDER or EXPORT command; suite has no way to finalize/output the edited project",
+            "severity": "HIGH",
+            "evidence": "bridge.ts:13-18 (no export-related command); StudioChatModal only shows 'applied' pills, no render UI"
+          },
+          {
+            "item": "brainvi-bridge handleCommand default case is a no-op; forward-compat claimed but no PROTOCOL_VERSION negotiation",
+            "severity": "LOW",
+            "evidence": "brainvi-bridge.ts:281-283 (case default: return)"
+          },
+          {
+            "item": "Audio only via SET_AUDIO (append/replace); no SET_VOLUME, FADE_IN, FADE_OUT, PAN commands for mixing",
+            "severity": "HIGH",
+            "evidence": "bridge.ts:16-17 (SET_AUDIO type); no volume/dynamics commands; user must manually mix in OpenCut"
+          },
+          {
+            "item": "No batch trim/cut preview: user cannot see 'if I cut here, arousal drops 4 points'; advice is post-hoc, not predictive",
+            "severity": "HIGH",
+            "evidence": "No PREVIEW_TRIM, GET_METRIC_AT_TIME, or similar; editing is blind without live scoring"
+          },
+          {
+            "item": "Agentic context missing: Mary cannot ask 'what is your emotional target for this scene?' or 'generate 3 color-grade options and I'll score them'",
+            "severity": "HIGH",
+            "evidence": "MARY_TOOLS does not include suggest_variants or similar; studio_edit is send-only, not ask+advise"
+          },
+          {
+            "item": "No test for end-to-end flow: user message → Mary invokes studio_edit → command sent → editor applies → reply received; only unit tests of components",
+            "severity": "MED",
+            "evidence": "bridge.test.ts and studio-edit.test.ts are isolated; message/route.ts is not tested for studio_edit path"
+          }
+        ],
+        "gaps_toward_vision": [
+          {
+            "gap": "Neural-advice layer: map arousal/attention/resonance curves to film-craft edit suggestions (cut timing, transition type, color/filter, pacing rhythm, vocal line edits)",
+            "why_it_matters": "Without this, edits are generic ('add text') not expert-grounded ('peak arousal at t=4.2s suggests holding the close-up 0.5s longer for peak audience tension'). This is the agentic difference.",
+            "rough_effort": "XL"
+          },
+          {
+            "gap": "Apply→re-score→lift loop: when Mary suggests an edit, she must apply it (async), re-score the modified timeline segment, and show the neural delta (before 37.6, after 39.2, +1.6 gain). This is the closed-loop proof.",
+            "why_it_matters": "Post-processors demand evidence. 'I think this will be better' is not enough; 'I tested it and arousal rose 2 points' is. The loop is what makes agentic editing trustworthy.",
+            "rough_effort": "XL"
+          },
+          {
+            "gap": "Extended command set: TRIM_ELEMENT, SPLIT_ELEMENT, DELETE_ELEMENT, SET_VOLUME, ADD_FADE, ADD_TRANSITION, APPLY_COLOR_GRADE, ADD_EFFECT, plus batch operations",
+            "why_it_matters": "Editing without trim/delete is like having a pen without an eraser. Post-producers need fine-grained control; Mary must be able to execute it agentic-style.",
+            "rough_effort": "L"
+          },
+          {
+            "gap": "Live MARY Nano scoring (Slice 2 prerequisite): RunPod serverless farm + fsaverage6 metric parsing. Currently only The Present is real; other content either falls back to TRIBE v2 or isn't scored at all.",
+            "why_it_matters": "The demo is proof; production is the value. Real time + real model = real product.",
+            "rough_effort": "XL"
+          },
+          {
+            "gap": "Variant generation + ranking: 'I tested 3 color grades and 2 pacing rhythms (6 total), here's the neural ranking' instead of 'pick one option I chose'",
+            "why_it_matters": "This is the agentic superiority mode: Mary does the work, you pick the direction. Requires edit_scene wiring + batch scoring.",
+            "rough_effort": "XL"
+          },
+          {
+            "gap": "Predictive trim/cut preview: before applying a cut, show the predicted arousal/attention arc if this cut is made. Editing with foresight, not hindsight.",
+            "why_it_matters": "Film-studio speed. Fastest way to close the loop: predict, decide, apply once. Not speculate→apply→re-score (3 steps), but see the delta before you commit.",
+            "rough_effort": "L"
+          },
+          {
+            "gap": "Conversational refinement: Mary asks 'is the emotional target of this scene catharsis or suspense?' and adapts her suggestions. Currently one-shot advice only.",
+            "why_it_matters": "Studio editors iterate with creative directors. Mary should do the same: ask, adjust, re-suggest. This is human-AI collaboration at speed.",
+            "rough_effort": "M"
+          }
+        ],
+        "key_files": [
+          "/Users/yahvingali/brainvi-monorepo/apps/chat/src/lib/cinema/studio/bridge.ts",
+          "/Users/yahvingali/brainvi-monorepo/apps/chat/src/lib/cinema/studio/bridge.test.ts",
+          "/Users/yahvingali/brainvi-monorepo/apps/chat/src/components/cinema/studio/StudioChatModal.tsx",
+          "/Users/yahvingali/brainvi-monorepo/apps/chat/src/lib/tools/executor.ts",
+          "/Users/yahvingali/brainvi-monorepo/apps/chat/src/lib/tools/studio-edit.test.ts",
+          "/Users/yahvingali/brainvi-monorepo/apps/editor/apps/web/src/lib/brainvi-bridge.ts",
+          "/Users/yahvingali/brainvi-monorepo/apps/editor/apps/web/src/components/brainvi-bridge-mount.tsx",
+          "/Users/yahvingali/brainvi-monorepo/apps/editor/apps/web/src/app/editor/page.tsx",
+          "/Users/yahvingali/brainvi-monorepo/apps/editor/apps/web/src/proxy.ts",
+          "/Users/yahvingali/brainvi-monorepo/apps/chat/src/app/cinema/studio/page.tsx",
+          "/Users/yahvingali/brainvi-monorepo/apps/chat/src/app/cinema/layout.tsx",
+          "/Users/yahvingali/brainvi-monorepo/apps/chat/src/lib/cinema/the-present-match.ts",
+          "/Users/yahvingali/brainvi-monorepo/research/mary/docs/mary-nano-cinema-demo-spec.md"
+        ]
+      },
+      {
+        "component": "OpenCut EditorCore API Surface (vendored in brainvi-monorepo/apps/editor)",
+        "summary": "OpenCut is a privacy-first, timeline-based video editor vendored into BrainVI for embedding. EditorCore (singleton) manages all editing state via 10 specialized managers: playback, timeline, scenes, media, project, renderer, commands, save, audio, and selection. The editor supports multi-track editing (video/image/text/audio/sticker), real-time canvas-based preview, audio playback with gain control, undo/redo, and export to MP4/WebM. The rendering pipeline uses Canvas2D + mediabunny for video output. Current maturity: feature-complete for basic editing (trim, split, move, delete, text styling); missing: effects/filters/color grading (explicitly deferred per CONTRIBUTING.md), keyframe animation, advanced transitions, and live neural feedback integration.",
+        "works": [
+          {
+            "item": "Timeline element insertion, trimming, splitting, moving, deleting (all 5 core operations)",
+            "evidence": "apps/editor/apps/web/src/core/managers/timeline-manager.ts:46-149 (insertElement, updateElementTrim, updateElementDuration, moveElement, deleteElements, splitElements, duplicateElements)"
+          },
+          {
+            "item": "Multi-track support with 4 track types: video, text, audio, sticker",
+            "evidence": "apps/editor/apps/web/src/types/timeline.ts:11,18-42 (TrackType enum, VideoTrack, TextTrack, AudioTrack, StickerTrack definitions)"
+          },
+          {
+            "item": "Text element styling: font size, family, weight, style, alignment, color, background color, opacity, rotation",
+            "evidence": "apps/editor/apps/web/src/core/managers/timeline-manager.ts:202-228 (updateTextElement with color, fontSize, fontFamily, fontWeight, fontStyle, textAlign, textDecoration, transform, opacity)"
+          },
+          {
+            "item": "Track visibility and mute toggles",
+            "evidence": "apps/editor/apps/web/src/core/managers/timeline-manager.ts:127-135 (toggleTrackMute, toggleTrackVisibility); element-level: 240-256 (toggleElementsVisibility, toggleElementsMuted)"
+          },
+          {
+            "item": "Playback control: play, pause, seek, volume, mute/unmute",
+            "evidence": "apps/editor/apps/web/src/core/managers/playback-manager.ts:15-86 (play, pause, seek, setVolume, mute, unmute, toggleMute)"
+          },
+          {
+            "item": "Audio playback with lookahead scheduling and gain control",
+            "evidence": "apps/editor/apps/web/src/core/managers/audio-manager.ts:127-176 (startPlayback with lookahead, scheduleUpcomingClips, masterGain.gain.value volume control)"
+          },
+          {
+            "item": "Project management: create, load, save, duplicate, delete, rename",
+            "evidence": "apps/editor/apps/web/src/core/managers/project-manager.ts:91-437 (createNewProject, loadProject, saveCurrentProject, deleteProjects, renameProject, duplicateProjects)"
+          },
+          {
+            "item": "Scene management: create, delete, rename, switch, bookmark toggle",
+            "evidence": "apps/editor/apps/web/src/core/managers/scenes-manager.ts:27-126 (createScene, deleteScene, renameScene, switchToScene, toggleBookmark, removeBookmark)"
+          },
+          {
+            "item": "Media asset lifecycle: add, remove, load, clear",
+            "evidence": "apps/editor/apps/web/src/core/managers/media-manager.ts:15-162 (addMediaAsset, removeMediaAsset, loadProjectMedia, clearProjectMedia)"
+          },
+          {
+            "item": "Undo/redo command history",
+            "evidence": "apps/editor/apps/web/src/core/managers/commands.ts:14-44 (undo, redo, canUndo, canRedo, clear)"
+          },
+          {
+            "item": "Render-to-export pipeline: MP4/WebM with configurable quality (low/medium/high/very_high) + optional audio",
+            "evidence": "apps/editor/apps/web/src/core/managers/renderer-manager.ts:23-119 (exportProject); apps/editor/apps/web/src/types/export.ts:1-27 (ExportFormat, ExportQuality, ExportOptions, ExportResult)"
+          },
+          {
+            "item": "Canvas 2D rendering with mediabunny codec pipeline",
+            "evidence": "apps/editor/apps/web/src/services/renderer/scene-exporter.ts:80-151 (export method: CanvasSource → Output → Mp4OutputFormat/WebMOutputFormat)"
+          },
+          {
+            "item": "Element rendering: video, image, text, sticker with transform (position, scale, rotation) + opacity",
+            "evidence": "apps/editor/apps/web/src/services/renderer/nodes/{video,image,text,sticker}-node.ts: VideoNode:51-81 (drawImage with opacity), TextNode:24-73 (translate, rotate, font styling, fillText), StickerNode:55-86 (transform, opacity), ImageNode:44-92 (contain-scale positioning)"
+          },
+          {
+            "item": "Background options: solid color or blur effect",
+            "evidence": "apps/editor/apps/web/src/services/renderer/nodes/color-node.ts:1-31; blur-background-node.ts:18-74 (filter blur with zoomScale 1.4x)"
+          },
+          {
+            "item": "Project settings: FPS, canvas size, background type",
+            "evidence": "apps/editor/apps/web/src/core/managers/project-manager.ts:103-110 (DEFAULT_FPS, DEFAULT_CANVAS_SIZE, background.type)"
+          },
+          {
+            "item": "Auto-save with debounced dirty state tracking (800ms default)",
+            "evidence": "apps/editor/apps/web/src/core/managers/save-manager.ts:54-107 (markDirty, queueSave, debounceMs, isSaving state)"
+          },
+          {
+            "item": "Selection manager: get/set selected elements, clear",
+            "evidence": "apps/editor/apps/web/src/core/managers/selection-manager.ts:13-34 (getSelectedElements, setSelectedElements, clearSelection)"
+          },
+          {
+            "item": "Project storage with migrations support",
+            "evidence": "apps/editor/apps/web/src/core/managers/project-manager.ts:54-89 (ensureStorageMigrations, CURRENT_STORAGE_VERSION)"
+          },
+          {
+            "item": "Clipboard/paste operations for timeline elements",
+            "evidence": "apps/editor/apps/web/src/core/managers/timeline-manager.ts:181-191 (pasteAtTime with ClipboardItem array)"
+          }
+        ],
+        "tested": [
+          {
+            "item": "Timeline trim/split/move operations via command pattern",
+            "test_file": "No test files found in apps/editor (audit found 0 .test.ts/.spec.ts files)",
+            "passing": "unknown — operations are command-based and type-safe, but no automated test coverage exists"
+          },
+          {
+            "item": "Playback time sync with playback-seek event dispatch",
+            "test_file": "No test files found",
+            "passing": "unknown — PlaybackManager.seek dispatches CustomEvent('playback-seek') but untested"
+          },
+          {
+            "item": "Audio playback clip scheduling",
+            "test_file": "No test files found",
+            "passing": "unknown — AudioManager.scheduleUpcomingClips and runClipIterator are untested code paths; potential race conditions in sessionId tracking untested"
+          },
+          {
+            "item": "Export to MP4/WebM via canvas renderer",
+            "test_file": "No test files found",
+            "passing": "unknown — SceneExporter.export is functional but untested; ffmpeg dependency installed but unused"
+          }
+        ],
+        "untested_or_broken": [
+          {
+            "item": "Effects/filters/color grading system (STUB)",
+            "severity": "HIGH",
+            "evidence": "apps/editor/.github/CONTRIBUTING.md:55-61 explicitly states 'Avoid: Preview panel enhancements (text fonts, stickers, effects)' + 'we're planning a major refactor of the preview system...moving to a binary rendering approach.' Effects do not exist in node types; only blur-background-node.ts:65 (single blur filter hardcoded)."
+          },
+          {
+            "item": "Keyframe animation system (MISSING)",
+            "severity": "HIGH",
+            "evidence": "No keyframe, animation, or tween types in apps/editor/apps/web/src/types/timeline.ts; Transform only has static position.x/y, scale, rotate with no time-based interpolation."
+          },
+          {
+            "item": "Transition effects between clips (MISSING)",
+            "severity": "HIGH",
+            "evidence": "No transition types in data model or renderer nodes; scene-builder.ts:51-107 renders elements sequentially with no crossfade/dissolve logic."
+          },
+          {
+            "item": "FFmpeg integration (UNUSED DEPENDENCY)",
+            "severity": "MED",
+            "evidence": "apps/editor/apps/web/package.json:19-21 imports @ffmpeg/core, @ffmpeg/ffmpeg, @ffmpeg/util but grep finds zero uses in src/ — likely leftover from future binary renderer refactor plan."
+          },
+          {
+            "item": "Preview/export consistency (DEFERRED)",
+            "severity": "HIGH",
+            "evidence": "apps/editor/.github/CONTRIBUTING.md:59-61 states 'The current HTML-based preview is essentially a prototype - the binary approach will be the real deal.' Preview uses Canvas2D, export also uses Canvas2D via mediabunny, but no integration testing of consistency."
+          },
+          {
+            "item": "Volume/fade curves on audio elements (MISSING)",
+            "severity": "MED",
+            "evidence": "apps/editor/apps/web/src/types/timeline.ts:55-60 (BaseAudioElement) has single 'volume: number' property with no fade-in/fade-out/volume-envelope support; audio-manager.ts does not expose volume-curve manipulation."
+          },
+          {
+            "item": "Cross-fade/dissolve transitions (MISSING)",
+            "severity": "HIGH",
+            "evidence": "No BlendModeNode or transition node type exists; blur-background-node only example of a composite rendering approach, but not generalizable to transitions."
+          },
+          {
+            "item": "Speed/frame-rate adjustment on clips (MISSING)",
+            "severity": "MED",
+            "evidence": "TimelineElement has duration/trimStart/trimEnd but no playback_speed or frame_rate property; video-node.ts renders at fixed timeOffset calculation without speed multiplier."
+          },
+          {
+            "item": "No AI neural-advice layer for MARY integration",
+            "severity": "CRITICAL",
+            "evidence": "ZERO integration with MARY Nano scoring system (the END VISION). EditorCore has no scoring API, no callback for neural feedback, no agent-drive-edit loop. Ruflo bridge exists in Nucleus but not here."
+          },
+          {
+            "item": "Selection and multi-select constraints (STUB)",
+            "severity": "MED",
+            "evidence": "apps/editor/apps/web/src/core/managers/selection-manager.ts:5-35 is bare array storage with no validation, no multi-track constraint rules, no dependency checking before delete."
+          },
+          {
+            "item": "No test automation (CRITICAL GAP)",
+            "severity": "CRITICAL",
+            "evidence": "Zero .test.ts / .spec.ts files in entire apps/editor/apps/web/src/; no jest/vitest config; no CI coverage checks. Commands are untested."
+          }
+        ],
+        "gaps_toward_vision": [
+          {
+            "gap": "Neural scoring feedback API: EditorCore needs a scoring bridge to call MARY Nano and get a score for the current cut",
+            "why_it_matters": "The agentic loop is: agent modifies cut → re-scores → shows lift. Without score retrieval, agent advice is blind. This is the critical feedback signal for the loop.",
+            "rough_effort": "M"
+          },
+          {
+            "gap": "Neural advice API: Once scoring works, add a scoring-to-advice layer that translates MARY activation changes into specific editor recommendations (e.g., 'increase ambience volume at 0:15-0:30 for +0.05 sadness lift')",
+            "why_it_matters": "Agent needs machine-readable guidance on *what to edit* and *why* (maximize emotion X). Current system has no emotional/reward signal.",
+            "rough_effort": "L"
+          },
+          {
+            "gap": "Color grading / color correction operators (saturation, hue, brightness, contrast, curves, LUT application)",
+            "why_it_matters": "Film post-processing depends on color grade to convey mood. Without this, agent cannot adjust emotional tone through visual appearance.",
+            "rough_effort": "L"
+          },
+          {
+            "gap": "Audio mix operators: per-clip volume envelopes (fade-in/fade-out/volume-ramps), EQ, compression, reverb send",
+            "why_it_matters": "Sound design is critical for emotional impact. Agent needs to sculpt audio texture in response to MARY neural feedback.",
+            "rough_effort": "L"
+          },
+          {
+            "gap": "Transition/crossfade operators (dissolve, fade, dip to black, wipe) with duration and easing curves",
+            "why_it_matters": "Pacing and emotional flow depend on transitions. Agent should be able to tune transition type/duration to maximize emotional rise.",
+            "rough_effort": "M"
+          },
+          {
+            "gap": "Keyframe animation: scale position/rotation/opacity over time with easing curves",
+            "why_it_matters": "Dynamic motion (e.g., slow-zoom on a moment) is a core emotional amplifier. Agent needs to animate elements.",
+            "rough_effort": "M"
+          },
+          {
+            "gap": "Agent command API: formalize EditorCore methods into a discrete action set that an LLM can call (e.g., trim(trackId, elementId, start_s, end_s) with clear error handling)",
+            "why_it_matters": "Agentic systems need strict contracts. Current manager methods are flexible but not schema-safe for agent prompting.",
+            "rough_effort": "S"
+          },
+          {
+            "gap": "Effect/filter pipeline: basic effects (blur, sharpen, color temperature, vignette) parameterized and renderable",
+            "why_it_matters": "Visual effects convey mood and focus. Agent should adjust effect intensity in response to MARY feedback.",
+            "rough_effort": "L"
+          },
+          {
+            "gap": "Clip-speed/frame-rate adjustment (slow-mo / speed-up without pitch shift)",
+            "why_it_matters": "Pacing through time-stretching is a core emotional tool (slow-mo on a climactic moment).",
+            "rough_effort": "M"
+          },
+          {
+            "gap": "A/B comparison view: show before/after scores side-by-side so user sees the neural lift from each edit",
+            "why_it_matters": "Closes the loop visually: agent edits, MARY scores, UI shows '+0.12 sadness, -0.03 joy'. Validates the agentic advice.",
+            "rough_effort": "M"
+          }
+        ],
+        "key_files": [
+          "/Users/yahvingali/brainvi-monorepo/apps/editor/apps/web/src/core/index.ts",
+          "/Users/yahvingali/brainvi-monorepo/apps/editor/apps/web/src/core/managers/timeline-manager.ts",
+          "/Users/yahvingali/brainvi-monorepo/apps/editor/apps/web/src/core/managers/playback-manager.ts",
+          "/Users/yahvingali/brainvi-monorepo/apps/editor/apps/web/src/core/managers/audio-manager.ts",
+          "/Users/yahvingali/brainvi-monorepo/apps/editor/apps/web/src/core/managers/project-manager.ts",
+          "/Users/yahvingali/brainvi-monorepo/apps/editor/apps/web/src/core/managers/renderer-manager.ts",
+          "/Users/yahvingali/brainvi-monorepo/apps/editor/apps/web/src/core/managers/scenes-manager.ts",
+          "/Users/yahvingali/brainvi-monorepo/apps/editor/apps/web/src/core/managers/media-manager.ts",
+          "/Users/yahvingali/brainvi-monorepo/apps/editor/apps/web/src/types/timeline.ts",
+          "/Users/yahvingali/brainvi-monorepo/apps/editor/apps/web/src/types/export.ts",
+          "/Users/yahvingali/brainvi-monorepo/apps/editor/apps/web/src/services/renderer/scene-exporter.ts",
+          "/Users/yahvingali/brainvi-monorepo/apps/editor/apps/web/src/services/renderer/canvas-renderer.ts",
+          "/Users/yahvingali/brainvi-monorepo/apps/editor/apps/web/src/services/renderer/nodes/base-node.ts",
+          "/Users/yahvingali/brainvi-monorepo/apps/editor/apps/web/src/services/renderer/nodes/video-node.ts",
+          "/Users/yahvingali/brainvi-monorepo/apps/editor/apps/web/src/services/renderer/nodes/text-node.ts",
+          "/Users/yahvingali/brainvi-monorepo/apps/editor/apps/web/src/services/renderer/nodes/blur-background-node.ts",
+          "/Users/yahvingali/brainvi-monorepo/apps/editor/.github/CONTRIBUTING.md",
+          "/Users/yahvingali/brainvi-monorepo/apps/editor/AGENTS.md",
+          "/Users/yahvingali/brainvi-monorepo/apps/editor/vercel.json"
+        ]
+      },
+      {
+        "component": "Cinema Analysis Backend (neural/affect signal for editing advice)",
+        "summary": "The cinema analysis backend produces per-scene and per-character neural metrics, attention/arousal/cognitive curves, key moments, and 18 brain-region-specific cinema metrics (narrative absorption, suspense arc, emotional depth, etc.) from cortical predictions. The pipeline segments films into scenes via TwelveLabs Pegasus, aggregates neural signals per scene, builds character rollups with empathy/memory/resonance/visual neural vectors, and produces a frozen CinemaReport contract with neural scores, curves, key moments, scenes, and characters. All 27 unit tests pass. However, the pipeline is disconnected from actual editing: advice (action_items, vlm_action_items) is produced by the VLM reporter but never applied to the source video. The MARY Nano 1.1 affective report builder (cinema_report_fsavg6.py) is defined but never called—the live pipeline still uses the original cinema_report builder.",
+        "works": [
+          {
+            "item": "Scene parsing from TwelveLabs Pegasus film-editor prose",
+            "evidence": "scene_index.py:99–163 parse_scenes(); tests all pass; handles [MM:SS-MM:SS] boundaries, character names, temporal gaps"
+          },
+          {
+            "item": "Per-scene metric aggregation (attention, arousal, cognitive_load from curves)",
+            "evidence": "scene_index.py:188–221 aggregate_scene_metrics(); slices per-second curves into scene windows; test_aggregate_scene_metrics_slices_curves_and_metrics passes"
+          },
+          {
+            "item": "Save-the-Cat beat labeling (act assignment + opening/catalyst/midpoint/climax/final_image)",
+            "evidence": "scene_index.py:251–293 label_beats(); maps acts from character guide + assigns beat per ordinal position; test_label_beats_assigns_act_and_beats passes"
+          },
+          {
+            "item": "18 cinema metrics (narrative absorption, suspense arc, emotional depth, character empathy, visual spectacle, cinematic frisson, pacing coherence, soundtrack integration, memory imprint, cognitive clarity, attention grip, surprise, opening hook, climax impact, resolution satisfaction, scene transition flow, dialogue engagement, tonal consistency)",
+            "evidence": "cinema_metrics.py:71–239 CINEMA_METRICS list + CINEMA_ROI_GROUPS; compute_cinema_metrics:359–456 produces all 18 with scores 0-100; test_metrics_are_not_degenerate_constants verifies atlas-aware ROI extraction (Schaefer-1000 + fsaverage6); test_two_different_inputs_give_different_metrics verifies non-constant output"
+          },
+          {
+            "item": "ROI extraction (atlas-aware DMN, Salience, Limbic, Mentalizing, Visual, Reward, DAN, Auditory, Hippocampus, PFC, Language)",
+            "evidence": "cinema_metrics.py:245–274 extract_roi_timeseries(); atlas_mapping auto-detects fsaverage6 (81,924 vtx) or Schaefer-1000 (1,000 parcels); test_roi_groups_map_to_known_atlas_names verifies all cinema ROIs resolve"
+          },
+          {
+            "item": "6-D neural score breakdown (hook_score, sustained_attention, emotional_resonance, memory_encoding, aesthetic_quality, cognitive_accessibility) for feature_film",
+            "evidence": "neural_score.py:282–324 compute_cinema_neural_score(); maps 18 cinema metrics to 6 dims via CINEMA_WEIGHTS; scores rounded to 1 decimal place"
+          },
+          {
+            "item": "Key moment detection (best_hook, peak_engagement, emotional_peaks, dropoff_risk, recovery)",
+            "evidence": "neural_score.py:177–276 detect_key_moments(); identifies attention peaks, arousal spikes >1.5σ above mean, attention drops with high cognitive load, re-engagement recoveries"
+          },
+          {
+            "item": "Per-character rollups (empathy_mentalizing, emotional_resonance, attention_to_character, memory; mindshare curves; intended-vs-received emotion gaps)",
+            "evidence": "character_index.py:138–226 build_characters(); aggregates per-scene ROI signals for each character; computes emotion keyword from guide + gap vs. actual arousal; test_build_characters_focus_and_neural_means passes"
+          },
+          {
+            "item": "CinemaReport contract assembly (frozen §3 spec: top-level + nested key sets)",
+            "evidence": "cinema_report.py:67–113 build_cinema_report(); enforces exact keys (job_id, title, duration_seconds, neural_score, cinema_metrics, curves, key_moments, scenes, characters, report); test_nested_key_sets_match_contract verifies all nested dicts match contract"
+          },
+          {
+            "item": "TwelveLabs Marengo indexing + per-second visual/audio analysis (objects, camera, framing, lighting, audio, text-on-screen)",
+            "evidence": "twelvelabs.py:167–199 analyze_per_second(); returns PerSecondAnalysis with objects, camera state, framing, lighting, audio dict, text_on_screen"
+          },
+          {
+            "item": "TwelveLabs Pegasus shot-by-shot film-editor breakdown with timestamps, characters, camera, audio, lighting, mood, editing pace",
+            "evidence": "twelvelabs.py:242–280 analyze_per_scene(); prompts for professional film editor analysis with character cast list, shot types, camera movement/angle, dialogue/music/SFX, lighting, mood, editing rhythm"
+          },
+          {
+            "item": "MARY Nano 1.1 affective report builder (fsaverage6 81,924-vertex BOLD → 6-D score + curves + key moments at 1 dp, no fabrication)",
+            "evidence": "cinema_report_fsavg6.py:35–106 build_affective_report(); handles (S,T,81924) multi-subject or (T,81924) single-subject BOLD; computes ISC-based neural score for multi-subject, legacy heuristic for single; per-second curves rounded; _affective_summary(arousal, attention, tr_seconds) grounded in real curves (line 23–32)"
+          },
+          {
+            "item": "VLM report generation (MiniMax M2.7 primary, Claude Haiku fallback) producing action_items + vlm_action_items with frame-accurate timestamps, brain regions, visual context, audio context, specific editing prescriptions",
+            "evidence": "vlm_reporter.py:1–200+ CINEMA_SYSTEM_PROMPT defines the advisory contract; generates priority, timestamp_start/end, dimension, brain_region, problem, visual/audio context, fix, edit_type per action item"
+          }
+        ],
+        "tested": [
+          {
+            "item": "parse_scenes boundary regex + character extraction",
+            "test_file": "backend/tests/pipeline/test_scene_index.py:21–62",
+            "passing": "passing — test_parse_scenes_boundaries_and_characters, test_parse_scenes_minutes_offset, test_parse_scenes_summary_captured, test_parse_scenes_empty_text_returns_single_full_scene all pass"
+          },
+          {
+            "item": "aggregate_scene_metrics slicing + averaging",
+            "test_file": "backend/tests/pipeline/test_scene_index.py:98–130",
+            "passing": "passing — test_aggregate_scene_metrics_slices_curves_and_metrics (scene [0,2) mean attention 15.0, arousal 20.0, per-scene cinema metric means); test_aggregate_handles_scene_beyond_curve_length (clamping)"
+          },
+          {
+            "item": "label_beats act + Save-the-Cat beat assignment",
+            "test_file": "backend/tests/pipeline/test_scene_index.py:135–163",
+            "passing": "passing — test_label_beats_assigns_act_and_beats, test_label_beats_no_guide_defaults_act_one"
+          },
+          {
+            "item": "Cinema metrics atlas-aware ROI extraction (non-degenerate output on Schaefer-1000)",
+            "test_file": "backend/tests/test_cinema_metrics_atlas.py:55–83",
+            "passing": "passing — test_extract_is_nonzero_on_schaefer_1000, test_metrics_are_not_degenerate_constants (18 distinct scores, non-zero raw values), test_two_different_inputs_give_different_metrics"
+          },
+          {
+            "item": "18 cinema metrics scoring (mean_activation, sustained_activation, peak_activation, coupling_strength, inverse_activation, variance_inverse)",
+            "test_file": "backend/tests/test_cinema_metrics_atlas.py",
+            "passing": "passing — verify ROI groups resolve, metrics vary with input, two different videos score differently"
+          },
+          {
+            "item": "Character rollups (empathy, emotional resonance, attention, memory; mindshare curve per scene; intended-vs-received gap)",
+            "test_file": "backend/tests/pipeline/test_character_index.py:48–154",
+            "passing": "passing — test_build_characters_focus_and_neural_means (barbara full window [0,4), mentalizing mean 40.0), test_johnny_only_first_scene_window (scene 0 only, mentalizing 20.0), test_mindshare_curve_per_scene (one per scene char is in), test_intended_vs_received_has_gap_per_scene (gap 0-1.0)"
+          },
+          {
+            "item": "CinemaReport contract key sets (top-level + nested neural_score/curves/report/scenes/characters)",
+            "test_file": "backend/tests/pipeline/test_cinema_report.py:140–239",
+            "passing": "passing — test_build_cinema_report_top_level_keys, test_nested_key_sets_match_contract (exact keys match), test_scalar_passthrough_and_serialization, test_report_dict_partial_is_filled_with_contract_keys (missing keys filled with defaults)"
+          },
+          {
+            "item": "MARY Nano 1.1 affective report shape, 1 dp rounding, fsaverage6 81,924-vertex handling",
+            "test_file": "backend/tests/test_cinema_report_fsavg6.py:7–31",
+            "passing": "passing — test_report_shape_and_one_decimal (120 TRs of fsavg6 BOLD, 1 dp for neural_score, curves length 120, model='MARY Nano 1.1', atlas='fsaverage6', n_vertices=81924)"
+          }
+        ],
+        "untested_or_broken": [
+          {
+            "item": "Per-second cinema metric timeseries (one value per TR for all 18 metrics)",
+            "severity": "CRITICAL",
+            "evidence": "cinema_metrics.py:359–456 compute_cinema_metrics() produces only AGGREGATE scores across the whole clip, not per-second timeseries. worker/tasks.py:637 calls aggregate_scene_metrics(..., {}) with an EMPTY cinema_per_second dict, so scenes.cinema_metrics are never populated. The spec (scene_index.py:200–201) accepts empty dict but this means scene-level metric drilling is a stub."
+          },
+          {
+            "item": "Edit application layer (apply advice from action_items to source video)",
+            "severity": "CRITICAL",
+            "evidence": "vlm_reporter.py:73–86 defines action_item shape with priority, timestamp_start/end, dimension, brain_region, problem, visual/audio context, fix, edit_type. These are produced by the VLM reporter and stored in cinema_report[report][vlm_action_items]. But there is NO code anywhere in cortical/backend (or elsewhere in monorepo cinema context) that consumes these action_items and applies them to the video. The 'edit_type' and 'fix' are advisory only."
+          },
+          {
+            "item": "Re-score after edit application (the loop: analyze → advise → apply → re-score → show lift)",
+            "severity": "CRITICAL",
+            "evidence": "No scoring loop exists. MARY Nano is run once; the report is generated once. There is no mechanism to: (a) apply an edit suggestion to the source video, (b) re-run MARY Nano on the edited version, (c) compare the old/new neural scores and show the lift. The entire 'advisory editing feedback loop' is missing."
+          },
+          {
+            "item": "MARY Nano 1.1 affective report integration into live pipeline",
+            "severity": "HIGH",
+            "evidence": "cinema_report_fsavg6.py:35–106 build_affective_report() is defined and tested (test_cinema_report_fsavg6.py passes) but NEVER CALLED. The live pipeline at worker/tasks.py:648 calls build_cinema_report (the original, non-affective builder), not build_affective_report. The MARY Nano 1.1 inference is not wired end-to-end for the demo spec's 'The Present' flow."
+          },
+          {
+            "item": "Pegasus prose → neural signals fusion (FusedMoment linking visual/audio observations to neural curve drops)",
+            "severity": "HIGH",
+            "evidence": "vlm_reporter.py references FusedMoment from fusion.py but worker/tasks.py:611–678 does NOT call any fusion layer. Pegasus is parsed into scenes; neural curves are computed separately. The two streams are never merged into a fused analysis that would say 'at 00:35 Barbara enters a dark static shot (visual observation) AND sustained_attention drops 40% (neural signal) → recommendation: add a cut.' The integration is aspirational (in SYSTEM_PROMPT) but not implemented."
+          },
+          {
+            "item": "TwelveLabs Marengo caching (to avoid re-indexing the same video)",
+            "severity": "HIGH",
+            "evidence": "twelvelabs.py:75–120 index_video downloads and uploads to TwelveLabs each time. There is no local cache check before uploading, and no mechanism to detect 'we have already indexed this video' by content hash or metadata. Re-running analysis on the same video re-indexes it (cost + latency)."
+          },
+          {
+            "item": "Character guide (screenplay_context) sourcing and validation",
+            "severity": "HIGH",
+            "evidence": "worker/tasks.py:645–646 calls build_characters(..., screenplay_context or '', focus_id='barbara'). The focus_id is hardcoded to 'barbara' (likely from 'The Present' demo). The screenplay_context comes from somewhere in the request (not shown in tasks.py signature), but there is no validation that it contains the required ACT lines or character blurbs. A malformed guide silently produces act=1 for all scenes and no intended emotions."
+          },
+          {
+            "item": "TwelveLabs Pegasus analysis fallback when shot boundaries are sparse or missing",
+            "severity": "MED",
+            "evidence": "scene_index.py:99–127 parse_scenes degradation: if no [MM:SS-MM:SS] matches found, returns single full-duration scene. This is graceful but loses the granularity needed for per-scene neural aggregation. A feature film might have Pegasus fail to emit shot boundaries (API timeout, quality issue), and the cinema report degrades silently to one scene."
+          },
+          {
+            "item": "VLM reporter (MiniMax/Claude) actual LLM call and error handling",
+            "severity": "MED",
+            "evidence": "vlm_reporter.py defines SYSTEM_PROMPT + format but the actual async LLM call via OpenRouter (lines ~220+, not shown in the read) has no visible error handling or retry logic. If the LLM 500s or returns malformed JSON, the exception is caught at worker/tasks.py:676 ('Cinema report assembly failed (non-fatal)') and cinema_report becomes None."
+          },
+          {
+            "item": "ISC-based neural score for multi-subject BOLD in build_affective_report",
+            "severity": "MED",
+            "evidence": "cinema_report_fsavg6.py:50–54 calls build_isc_neural_score(bold) for (S, T, 81924) input. The import is conditional (line 53) and the function is not shown. If the ISC import fails or the function is undefined, the affective report falls back to a legacy heuristic path. The fallback is not well-tested."
+          },
+          {
+            "item": "Character 'description' field (from guide blurb or appearance description from Pegasus)",
+            "severity": "LOW",
+            "evidence": "character_index.py:216 sets description=_guide_blurb(cid, guide_text). If the guide is missing or sparse, description is empty string. Pegasus may emit appearance descriptions ('woman in red coat') but the scene_index parser doesn't extract those — it only pulls from the CHARACTERS: line."
+          },
+          {
+            "item": "No tests for the full cinema pipeline integration (parse → aggregate → label → character rollup → report build)",
+            "severity": "MED",
+            "evidence": "Tests cover each stage in isolation (scene_index, character_index, cinema_report, cinema_metrics). There is NO integration test that: (a) mocks Pegasus prose + neural curves + screenplay_context, (b) runs the full feature_film pipeline end-to-end, (c) verifies the final CinemaReport contains expected scenes + characters + metrics."
+          },
+          {
+            "item": "Hardcoded focus_id='barbara' in live pipeline",
+            "severity": "LOW",
+            "evidence": "worker/tasks.py:646 build_characters(..., focus_id='barbara') is hardcoded. Should come from the request metadata or character guide. For non-'The Present' films, this marks the wrong character (or no character) as the focus."
+          }
+        ],
+        "gaps_toward_vision": [
+          {
+            "gap": "Edit application executor — consume action_items from the VLM report and apply them to the source video file (e.g., FFmpeg cut insertion, color grade, audio ducking, transitions)",
+            "why_it_matters": "The entire feedback loop depends on this: advice is generated but never acted upon. A post-processing module (e.g., `edit_executor.py`) must parse action_item['edit_type'] + ['fix'] + ['timestamp_start/end'] and emit FFmpeg/Remotion commands or an edit decision list (EDL) to the user or to an automated re-encoder.",
+            "rough_effort": "L"
+          },
+          {
+            "gap": "Re-scoring pipeline — take the edited video, re-extract features, re-run MARY Nano inference, recompute neural signals, and compare old vs. new neural scores to quantify the 'lift'",
+            "why_it_matters": "The loop closes only with measurement: after editing, the user/system needs to see 'sustained_attention rose from 45.2 → 67.8' or 'emotional_resonance flat but memory_imprint +12.5'. Without re-scoring, the advice is unvalidated and the lift is unmeasurable.",
+            "rough_effort": "L"
+          },
+          {
+            "gap": "Per-second cinema metric timeseries (not just per-scene aggregates) — extend compute_cinema_metrics to emit per-TR scores for all 18 metrics, enabling frame-level drilling and granular scene-by-scene advice",
+            "why_it_matters": "Currently scenes[i].cinema_metrics is empty. Per-second metrics would allow: (a) VLM reporter to say 'at 00:35 emotional_depth was 22, visual_spectacle spiked to 88', (b) per-scene advice (e.g., 'Scene 2: memory_imprint low, add hippocampal trigger'), (c) finer-grained edit suggestions tied to specific moments.",
+            "rough_effort": "M"
+          },
+          {
+            "gap": "Pegasus prose ↔ neural curves fusion layer — merge visual/audio observations from Pegasus with attention/arousal/cognitive curves to produce a fused moment stream (FusedMoment objects linking shot-level visual context to neural signal drops)",
+            "why_it_matters": "The VLM reporter's CINEMA_SYSTEM_PROMPT declares the fusion contract (A: PEGASUS OBSERVATION, B: NEURAL DIAGNOSIS, C: EDITING PRESCRIPTION) but no code assembles it. A fusion layer (e.g., `fusion.py::fuse_pegasus_and_neural`) would emit: {'timestamp': 00:35, 'pegasus': {shot_type, characters, camera, audio, lighting}, 'neural': {attention_drop_pct, arousal_level, curve_event}, 'diagnosis': None, 'fix': None} for the VLM to populate diagnosis/fix.",
+            "rough_effort": "M"
+          },
+          {
+            "gap": "MARY Nano 1.1 affective report wiring into the live feature_film pipeline (replace build_cinema_report with build_affective_report when atlas=fsaverage6)",
+            "why_it_matters": "The demo spec (mary-nano-cinema-demo-spec.md) mandates: 'The Present (MARY Nano 1.1 fsaverage6) → build_affective_report → cached report in chat.brainvi.ai'. Currently the live pipeline still calls build_cinema_report (TRIBE v2 path). The Nano integration is complete in isolation but dead-code in the live system.",
+            "rough_effort": "M"
+          },
+          {
+            "gap": "Agentic advice refinement layer — after VLM produces initial action_items, a secondary reasoning agent ranks them by impact (neural dimension + brain region), consolidates redundant suggestions, and estimates effort/cost per edit",
+            "why_it_matters": "A feature film may have 50+ problem moments. The VLM generates 50 action items. An editor needs: (1) prioritized list (P0: hook score, P1: memory encoding, P2: tonal consistency), (2) dependency graph (e.g., 'cut X and Y before adding music'), (3) effort estimate ('this 8 cuts + 3 audio changes = 2 hours'). A ranking/consolidation agent (e.g., `advice_ranker.py`) would produce a curated 'top 5 edits for max lift' rather than a brain-dump of all findings.",
+            "rough_effort": "M"
+          },
+          {
+            "gap": "Edit preview / before-after visualization — mock-apply an action_item and show a side-by-side neural curve comparison (before: sustained_attention 45.2; after [preview]: 67.8) before the user commits to the edit",
+            "why_it_matters": "Validating advice in-place (without actually re-running inference on the edited video) would use a lightweight heuristic model (e.g., 'adding a cut reduces shot-stasis boredom, so DAN + attention rise by ~X%'). This enables rapid iteration: user sees 'if I add this cut, attention +22%', applies it, verifies, moves to the next edit.",
+            "rough_effort": "M"
+          },
+          {
+            "gap": "Character emotional intent fulfillment scoring — for each character in each scene, compute 'was the intended emotion (from guide) matched by the actual neural response?' and produce character-level advice (e.g., 'Barbara should feel fear but arousal only 35, add shadow/music to trigger amygdala')",
+            "why_it_matters": "character_index.py computes intended_vs_received gap per scene but doesn't produce actionable advice from it. A character-centric advisor layer would say: 'in scene 3, Barbara's intended fear (0.8) was only received as 0.35 arousal → to close the gap, (a) tighten the close-up by 0.5s, (b) add minor-key string swell, (c) lower key light 1 stop for shadow contrast'.",
+            "rough_effort": "M"
+          },
+          {
+            "gap": "Multi-model MARY readout support (swap between MARY Nano 1.1, Lite 1.1, TRIBE v2 via readout_mode) with adaptive advice (Nano's novel-film strength → different priorities than Lite's in-dist)",
+            "why_it_matters": "The vision declares 'MARY scores the cut and gives directly-contributing advice'. Advice optimal for Nano (novel-film strengths: character empathy, surprise) may differ from Lite (in-dist strengths: absolute activation accuracy). An adaptive advisor would route: Nano → advice emphasizes character arc / emotional contrast; Lite → advice emphasizes overall activation ceiling + hold rate.",
+            "rough_effort": "M"
+          },
+          {
+            "gap": "Live interactive edit loop in the chat UI — user asks 'increase the fear in Scene 3', the advisor suggests edits, user sees the preview, applies one, and chat fetches the updated neural report showing the lift (all within the chat session)",
+            "why_it_matters": "The END VISION is 'agentic video editor' — the chat itself becomes the editing interface. A user doesn't export action_items to DaVinci; they ask Mary 'make this scarier' and Mary suggests edits, shows the lift, and the user can iterate. This requires: (a) edit executor, (b) re-scoring, (c) chat state persistence (remembering which edits the user applied), (d) diff-based re-analysis (only re-extract + re-infer changed regions).",
+            "rough_effort": "XL"
+          }
+        ],
+        "key_files": [
+          "/Users/yahvingali/brainvi-monorepo/services/cortical/backend/pipeline/cinema_report.py",
+          "/Users/yahvingali/brainvi-monorepo/services/cortical/backend/pipeline/cinema_report_fsavg6.py",
+          "/Users/yahvingali/brainvi-monorepo/services/cortical/backend/pipeline/cinema_metrics.py",
+          "/Users/yahvingali/brainvi-monorepo/services/cortical/backend/pipeline/scene_index.py",
+          "/Users/yahvingali/brainvi-monorepo/services/cortical/backend/pipeline/character_index.py",
+          "/Users/yahvingali/brainvi-monorepo/services/cortical/backend/pipeline/neural_score.py",
+          "/Users/yahvingali/brainvi-monorepo/services/cortical/backend/pipeline/vlm_reporter.py",
+          "/Users/yahvingali/brainvi-monorepo/services/cortical/backend/clients/twelvelabs.py",
+          "/Users/yahvingali/brainvi-monorepo/services/cortical/backend/worker/tasks.py",
+          "/Users/yahvingali/brainvi-monorepo/services/cortical/backend/tests/pipeline/test_cinema_report.py",
+          "/Users/yahvingali/brainvi-monorepo/services/cortical/backend/tests/pipeline/test_scene_index.py",
+          "/Users/yahvingali/brainvi-monorepo/services/cortical/backend/tests/pipeline/test_character_index.py",
+          "/Users/yahvingali/brainvi-monorepo/services/cortical/backend/tests/test_cinema_metrics_atlas.py",
+          "/Users/yahvingali/brainvi-monorepo/services/cortical/backend/tests/test_cinema_report_fsavg6.py",
+          "/Users/yahvingali/brainvi-monorepo/research/mary/docs/mary-nano-cinema-demo-spec.md"
+        ]
+      },
+      {
+        "component": "Cinema Streaming Pipeline + SSE Gateway (Phase 1 Live Theater)",
+        "summary": "The cinema streaming pipeline implements a real-time SSE gateway for delivering MARY Nano neural scores to the chat interface as choreographed events. It supports two modes: LIVE (submits genuine backend GPU jobs, polls for real phases, streams actual results) and REPLAY (cached demo films with canned choreography for showcase). The pipeline streams 11 event types (meta, status, curves, scores, metrics, scenes, characters, key moments, narrative, complete, error) into a React reducer that builds a PartialCinemaReport. The SSE source cleanly separates transport (source.ts) from event semantics (events.ts) and accumulation (accumulate.ts), with tests covering SSE parsing, event reduction, partial-to-report projection, and replay decomposition. LIVE mode genuinely submits to NeuroPeer/cinema backend and polls real job status; after the function's 300s deadline, unfinished jobs keep running backend-side but the stream times out gracefully. The edit_scene tool closes the loop: execute (FAL V2V or Higgsfield), re-score (runCinema with 30-min backend polling), build A/B compare, return before/after neural lift.",
+        "works": [
+          {
+            "item": "SSE source abstraction with proper buffering and [DONE] sentinel handling",
+            "evidence": "source.ts:13–25 (parseSseChunk pure function, state.buffer slicing, line-by-line JSON parsing with malformed skip)"
+          },
+          {
+            "item": "Event type contract with forward-compatibility comments",
+            "evidence": "events.ts:14–25 (ScoringEvent union includes type guards for unknown event future-proofing)"
+          },
+          {
+            "item": "Pure event accumulation with scene upsert-by-index and curve gap-padding",
+            "evidence": "accumulate.ts:32–46 (upsert function preserves list immutability, extend pads zeros from fromSec)"
+          },
+          {
+            "item": "Projection of PartialCinemaReport to CinemaReport shape with default zeroing",
+            "evidence": "partialToReport.ts:8–35 (explicit all-keys fallback to zero NeuralScore + empty arrays)"
+          },
+          {
+            "item": "Choreography-driven replay decomposition with per-phase branching (inferring = per-sec curves + progressive score, aggregating = scenes+characters, scoring = metrics+moments, complete = narrative+report)",
+            "evidence": "replay.ts:8–57 (decomposeReport async generator, phase-specific event sequencing, 60s DEFAULT_CHOREO)"
+          },
+          {
+            "item": "React hook (useScoringStream) manages SSE subscription, cancelled-guard, and error fallback",
+            "evidence": "useScoringStream.ts:8–28 (createSseSource, event-to-partial reducer, AbortController cleanup on unmount/runKey)"
+          },
+          {
+            "item": "LIVE mode submits real backend job (POST /api/v1/analyze), polls with 4s interval, streams backend status phases, handles submit/poll/timeout errors",
+            "evidence": "route.ts:34–91 (maxDuration=300s, deadline=290s, poll loop line 57–80, three error codes: submit_failed, pipeline_error, timeout)"
+          },
+          {
+            "item": "LIVE mode normalizes partial backend reports: guards curves, sets defaults, passes through job_id/title/model label only if backend provides it",
+            "evidence": "route.ts:123–135 (normalize function defensive defaulting, line 66–67 'never fabricate' model label comment)"
+          },
+          {
+            "item": "REPLAY mode loads demo reports (NOTLD, The Present) and decomposes with choreography",
+            "evidence": "route.ts:93–117, demo-data.ts:13–21 (loadDemoReport returns { report, model }, 'the-present' labelled as 'MARY Nano 1.1')"
+          },
+          {
+            "item": "LiveCinemaPanel UI shows phase label, progress bar, running neural_score.total, model label (honest: only when backend provides)",
+            "evidence": "LiveCinemaPanel.tsx:17–93 (PHASE_LABEL map, progress %, score.toFixed(1), model render gated on partial.meta?.model)"
+          },
+          {
+            "item": "edit_scene tool closes the loop: execute edit (FAL or Higgsfield), re-score edited clip (runCinema 30-min polling), compute CinemaCompare (before/after deltas), return winner+reason",
+            "evidence": "executor.ts:408–555 (edit flow: lines 464–508 edit, 510–518 re-score, 534–540 compare computation)"
+          },
+          {
+            "item": "CinemaCompare derivation logic computes delta subscores, picks top-magnitude swing to justify winner, formats reason prose",
+            "evidence": "contract.ts:181–226 (computeCompare, subscoreKeys iteration, topKey/topMag selection, reason template)"
+          },
+          {
+            "item": "runCinema (async polling backend) has defensive mapping: accepts top-level OR nested cinema_report, guards against missing fields, 30-min deadline, status-error handling",
+            "evidence": "executor.ts:268–324 (mapBackendToCinemaReport call line 312, cinema_report nesting fallback 308–311, deadline+poll loop, status='error' throw)"
+          },
+          {
+            "item": "SSRF guards on all external URLs: route.ts, runCinema, edit_scene, studio_edit",
+            "evidence": "route.ts:37 (validateMediaUrl before NEUROPEER submit), executor.ts:278–279, 459–461, 567–568"
+          }
+        ],
+        "tested": [
+          {
+            "item": "SSE chunk parsing with partial line buffering",
+            "test_file": "source.test.ts",
+            "passing": "passing — tests JSON extraction from 'data: ' lines, [DONE] sentinel skip, cross-chunk mid-JSON buffering (lines 6–20)"
+          },
+          {
+            "item": "Event reduction (pure accumulation, scene upsert, curve gaps, complete/error phases)",
+            "test_file": "accumulate.test.ts",
+            "passing": "passing — tests immutability (line 13), scene index sorting (line 20), upsert dedup (line 27), curve gap-padding (line 35), forward-compat unknown types (line 41), complete/error phase transitions (lines 47–60)"
+          },
+          {
+            "item": "PartialCinemaReport → CinemaReport projection",
+            "test_file": "partialToReport.test.ts",
+            "passing": "passing — tests empty partial zeroes all fields (line 13), meta+score+scenes pass through (line 31)"
+          },
+          {
+            "item": "Replay decomposition round-trip: decompose then reduce = original report",
+            "test_file": "replay.test.ts",
+            "passing": "passing — assembles tinyReport across phases, verifies scenes/characters/metrics/curves/score lossless (lines 20–32); first event=meta, last=complete (lines 34–39)"
+          }
+        ],
+        "untested_or_broken": [
+          {
+            "item": "LIVE mode backend integration (no route-level tests; assumes NeuroPeer API contract stability)",
+            "evidence": "route.ts:34–91 — no integration test; real test requires live NeuroPeer instance + auth key",
+            "severity": "CRITICAL"
+          },
+          {
+            "item": "Timeout recovery UX (job keeps running backend-side after function deadline, user must 'reopen' — no resume protocol)",
+            "evidence": "route.ts:81 ('the job is still running, reopen to resume'); no job_id return path for resumption",
+            "severity": "HIGH"
+          },
+          {
+            "item": "Poll failure loop: if poll returns non-200 and JSON parse fails, status extraction defaults to last, potentially infinite-loops on 202 (still queued)",
+            "evidence": "route.ts:76–79 (body?.status || body?.detail?.status || last; no explicit 202/202→queued handling)",
+            "severity": "MED"
+          },
+          {
+            "item": "No request.signal.aborted check between poll and decomposeReport iteration; can process a stale report after UI closes stream",
+            "evidence": "route.ts:68–73 (check aborted before send, but message already in flight; minor due to controller close at finally)",
+            "severity": "LOW"
+          },
+          {
+            "item": "edit_scene higgsfield engine is a TODO stub: no MCP call, falls back to fal silently",
+            "evidence": "executor.ts:468–490 (TODO comment, fallback catch → fal, usedEngine='fal', no error surfaced to user if intended higgsfield)",
+            "severity": "HIGH"
+          },
+          {
+            "item": "edit_scene re-score failure returns clip URL without re-score (graceful degrade); user sees 'rescored: false' but compare is null, confusing",
+            "evidence": "executor.ts:519–531 (catch, rescored=false, data.compare is not set, reportUrl points to demo instead of actual edit result)",
+            "severity": "MED"
+          },
+          {
+            "item": "runCinema polls for 30 min; if backend never completes, blocks the message turn (freezes chat UI for caller)",
+            "evidence": "executor.ts:298–323 (deadline=30min, while loop, timeout throw; no streaming or background delegation like LIVE mode)",
+            "severity": "HIGH"
+          },
+          {
+            "item": "Choreography-driven replay hard-codes phase durations (DEFAULT_CHOREO: 60s total, FAST_CHOREO 1/10th); no backend-supplied pacing",
+            "evidence": "choreography.ts:8–22 (queued 1.5s, downloading 2.5s, transcribing 4s, inferring 26s, etc.); live mode emits backend status but uses same choreography for delay timing (replay.ts:31 'per = ph.durationMs / Math.max(1, n)')",
+            "severity": "MED"
+          },
+          {
+            "item": "No integration test for edit_scene close loop (submit → execute → re-score → compare return)",
+            "evidence": "no .test.ts for edit_scene in executor; relies on manual chat testing",
+            "severity": "HIGH"
+          },
+          {
+            "item": "NEUROPEER_KEY() missing = graceful '503 Scoring backend not configured' (route.ts:39), but no secret-injection mechanism documented for local dev",
+            "evidence": "route.ts:16–17, executor.ts:17–20 (env vars with OR fallback to empty string; developer must set process.env)",
+            "severity": "MED"
+          },
+          {
+            "item": "No AI-generated advice layer: action_items/vlm_action_items are backend-supplied only; edit_scene receives user instruction (natural language), not MARY-recommended fixes",
+            "evidence": "contract.ts:101–108 (narrative has action_items/vlm_action_items fields, but definitions.ts line 131 edit_scene says user provides instruction, no mention of auto-advice routing)",
+            "severity": "CRITICAL"
+          },
+          {
+            "item": "No agentic re-score loop: edit_scene executes edit once, re-scores once, returns 1 compare. No iteration until threshold met (per marketing copy at studio/page.tsx:41–45)",
+            "evidence": "executor.ts:410–555 (single edit → single re-score flow; no loop condition, no threshold check)",
+            "severity": "CRITICAL"
+          },
+          {
+            "item": "Cinema metrics & key moments are backend-supplied, not derived from MARY Nano; Nano only provides 6-D neural score + per-sec curves",
+            "evidence": "thePresentReport.json (MARY Nano 1.1 data), live mode decomposition (replay.ts:34–48 aggregating/scoring phases emit backend data as-is)",
+            "severity": "HIGH"
+          }
+        ],
+        "gaps_toward_vision": [
+          {
+            "gap": "No real-time agentic advice layer: MARY should analyze growing curves/score and emit specific edit recommendations (trim this beat, cool the grade, extend the close-up, compress pacing) — not just static action_items from the backend",
+            "why_it_matters": "End vision requires 'directly-contributing advice on specific actions (ambience, vocal lines, color grades, clipping/trims, transitions, pacing) to maximize specific emotions, produce better neural reward signatures'. Currently the advice (action_items) comes from backend VLM post-hoc, not from MARY's real-time evaluation.",
+            "rough_effort": "XL"
+          },
+          {
+            "gap": "No closed-loop optimizer: edit_scene executes once and returns. Should loop: assess score → auto-suggest fix → execute → re-score → check threshold → repeat until neural lift target met or N iterations exhausted",
+            "why_it_matters": "Marketing copy ('generate-score-edit iterations until it works') and the END VISION describe an agentic optimizer that mutates the cut autonomously or with minimal user intervention. Current edit_scene is a 1-shot tool: user provides instruction, executes, returns compare. No auto-iteration.",
+            "rough_effort": "L"
+          },
+          {
+            "gap": "MARY Nano inference-time advice synthesis missing: Nano only outputs 6-D + per-sec curves (fsaverage6). Need an inference extension that directly outputs per-region neural sensitivity maps + action-vector recommendations (what to emphasize, de-emphasize, hold, cut, recolor)",
+            "why_it_matters": "Currently MARY is a black-box scorer. To give *directly-contributing* advice, it must output structured guidance (e.g., 'V1/V4 activation spikes at 00:51; hold that shot 1.2s longer' or 'mPFC/TPJ underactive during dialogue; increase intimate framing'). Requires new Nano output head or post-hoc probing.",
+            "rough_effort": "XL"
+          },
+          {
+            "gap": "No multi-layer edit suggestion engine: MARY should emit ranked edit options (ambience layer: 'remove distracting background noise'; vocal: 'increase protagonist volume +2dB'; color: 'cool the grade, lower saturation'; structure: 'trim this 8-frame beat'). Currently only free-form user instructions to FAL.",
+            "why_it_matters": "A film post-processor needs structured, parameterized guidance that can be directly applied — 'cool the grade' is vague; 'reduce saturation 20%, shift hue −15°, raise contrast +5%' is actionable. Requires a MARY→edit-param transform learned from prior edits.",
+            "rough_effort": "L"
+          },
+          {
+            "gap": "No background re-score polling during edits: runCinema blocks the chat turn for 30 min. If user edits in the studio while waiting, the chat freezes. Need background job ID tracking + async polling (like LIVE mode) so chat stays interactive.",
+            "why_it_matters": "Real post-production is iterative and non-linear. User should be able to explore edits, apply suggestions, chat, all while scoring happens async. Current 30-min blocking is UX-hostile.",
+            "rough_effort": "M"
+          },
+          {
+            "gap": "No score-to-edit mapping learned from corpus: edit_scene receives free-text instruction ('cool, desaturated grade'); FAL guesses the params. Should train a prior from successful (original→edited, neural_delta) pairs so 'raise emotional_resonance by 8 points' maps to concrete FAL params deterministically.",
+            "why_it_matters": "Agentic systems thrive on learned heuristics. Without a prior, MARY's advice ('raise emotional_resonance') must still be manually translated to edit params by the user or guessed by FAL V2V. A learned encoder makes advice → execution deterministic and fast.",
+            "rough_effort": "L"
+          },
+          {
+            "gap": "Cinema metrics (18 metrics) are backend-derived, not MARY-derived; Nano only outputs 6-D score. Should decompose Nano's per-region activations into 18 cinema-semantic metrics (narrative_absorption=DMN, fear_threat=amygdala, etc.) so advice is grounded in brain regions MARY is actually sensitive to.",
+            "why_it_matters": "Advice credibility: if MARY says 'raise suspense_tension', it should cite amygdala/ACC activation patterns from Nano's internals, not generic backend heuristics. Requires Nano probe/attention extraction + supervised metric regression.",
+            "rough_effort": "M"
+          },
+          {
+            "gap": "No real-time streaming score updates during 30-min runCinema polling: user sees nothing until complete. Should stream interim curves/partial neural_score to keep UX alive (like LIVE mode does).",
+            "why_it_matters": "30-min wait is tolerable if user sees progress (curves building, interim score stabilizing). Total silence erodes confidence. LIVE mode's SSE streaming is proven; runCinema should use same pattern.",
+            "rough_effort": "M"
+          },
+          {
+            "gap": "Higgsfield character-consistent generation is stubbed out (TODO, falls back to FAL); no wiring to Mary backend MCP. If user asks to 'generate a new shot with better framing', it silently downgrades to FAL V2V.",
+            "why_it_matters": "Character consistency is critical for performance/emotional continuity. FAL V2V alone drifts character appearance. The MCP is built (brainvi-monorepo/packages/mcp); needs route/integration.",
+            "rough_effort": "M"
+          }
+        ],
+        "key_files": [
+          "/Users/yahvingali/brainvi-monorepo/apps/chat/src/app/api/cinema/stream/route.ts",
+          "/Users/yahvingali/brainvi-monorepo/apps/chat/src/lib/cinema/streaming/source.ts",
+          "/Users/yahvingali/brainvi-monorepo/apps/chat/src/lib/cinema/streaming/events.ts",
+          "/Users/yahvingali/brainvi-monorepo/apps/chat/src/lib/cinema/streaming/accumulate.ts",
+          "/Users/yahvingali/brainvi-monorepo/apps/chat/src/lib/cinema/streaming/partialToReport.ts",
+          "/Users/yahvingali/brainvi-monorepo/apps/chat/src/lib/cinema/streaming/replay.ts",
+          "/Users/yahvingali/brainvi-monorepo/apps/chat/src/lib/cinema/streaming/choreography.ts",
+          "/Users/yahvingali/brainvi-monorepo/apps/chat/src/lib/cinema/streaming/useScoringStream.ts",
+          "/Users/yahvingali/brainvi-monorepo/apps/chat/src/components/chat/cinema/LiveCinemaPanel.tsx",
+          "/Users/yahvingali/brainvi-monorepo/apps/chat/src/lib/cinema/contract.ts",
+          "/Users/yahvingali/brainvi-monorepo/apps/chat/src/lib/tools/executor.ts",
+          "/Users/yahvingali/brainvi-monorepo/apps/chat/src/lib/tools/definitions.ts"
+        ]
+      },
+      {
+        "component": "Agentic Edit Loop + Neural-Advice Gap",
+        "summary": "The edit_scene tool closes a single cycle (score → edit via fal V2V → re-score → show before/after lift via CinemaCompare), but the \"MARY gives directly-contributing advice on specific actions to maximize emotions/rewards\" layer is missing. Today: neural scores flow → VLM reporter generates action_items (text descriptions of fixes) → agent reads them as static text. The critical gap is that there is NO mapping from neural deltas to specific edit instruction recommendations, NO real-time neural simulation of \"if we do X, the neural reward improves by Y\", and NO wiring that lets MARY auto-suggest concrete edit_scene calls parametrized by neural feedback. The agent must ask the user for an instruction, execute it blindly via fal, and pray the edit improved the score. No feedback loop from neural signal → edit action → lift observation.",
+        "works": [
+          {
+            "item": "Score-to-report pipeline works: submit video → run MARY Nano inference → get 6-D neural score + cinema metrics + curves + 18 brain-mapped metrics",
+            "evidence": "executor.ts:98-212 (scoreVideo), executor.ts:268-324 (runCinema)"
+          },
+          {
+            "item": "Edit execution works: parse instruction → submit to fal V2V queue → poll for completion → return video URL",
+            "evidence": "fal.ts:58-114 (editVideo), executor.ts:407-555 (editScene)"
+          },
+          {
+            "item": "Before/after comparison works: compute delta_total, delta_subscores, delta_curves, pick winner, explain why",
+            "evidence": "contract.ts:181-226 (computeCompare)"
+          },
+          {
+            "item": "VLM reporter generates timestamped action_items tied to neural dimensions + brain regions + specific visual/audio context",
+            "evidence": "vlm_reporter.py:26-175 (SYSTEM_PROMPT + CINEMA_SYSTEM_PROMPT), vlm_reporter.py:284-361 (generate_vlm_report)"
+          },
+          {
+            "item": "Action items persisted in CinemaReport.report: priorities[], action_items[], vlm_action_items[]",
+            "evidence": "executor.ts:712-726 (mapBackendToCinemaReport), contract.ts:102-108 (CinemaReportNarrative)"
+          },
+          {
+            "item": "Agent sees full CinemaReport including action_items when chat receives tool result",
+            "evidence": "message/route.ts:314-318 (tool result appended as JSON to messages)"
+          },
+          {
+            "item": "Live edit loop closes one turn: agent calls edit_scene → fal runs → re-score succeeds → returns CinemaCompare to agent",
+            "evidence": "executor.ts:407-555 (editScene steps 1-3)"
+          }
+        ],
+        "tested": [
+          {
+            "item": "editScene reruns cinema analysis on the edited clip (runCinema called at line 513)",
+            "test_file": "executor.ts:513",
+            "passing": "passing — the re-score happens; the compare is built from baseline + edited"
+          },
+          {
+            "item": "computeCompare correctly derives delta_total and picks winner (winner = b if delta_total >= 0)",
+            "test_file": "contract.ts:219",
+            "passing": "passing — fixture test at contract.ts:486-489 shows a before/after pair producing a valid CinemaCompare"
+          },
+          {
+            "item": "V2V edit instruction flows through fal queue API",
+            "test_file": "fal.ts (integration; no unit test present)",
+            "passing": "unknown — live API only; fixture tests missing"
+          }
+        ],
+        "untested_or_broken": [
+          {
+            "item": "CRITICAL: No code maps neural score deltas to concrete edit recommendations. The agent does not call edit_scene with instructions auto-parameterized by neural feedback. The VLM reporter generates action_items for the human to read; those are never programmatically parsed to build an edit_scene call.",
+            "severity": "CRITICAL",
+            "evidence": "No function correlates a neural delta (e.g. emotional_resonance dropped 15%) to a recommended instruction (e.g. 'raise music volume -6dB at t=2.3s'). The action_items in vlm_reporter.py are text descriptions for human consumption, not machine-actionable edit parameters. executor.ts:89-90 requires the agent to pass a hand-written instruction string — there is no system to generate those from neural signal."
+          },
+          {
+            "item": "No real-time neural simulation layer. Before the agent executes an edit, MARY cannot predict what the neural lift will be. The loop is: agent guesses instruction → fal executes → re-score reveals truth. No feedforward model or lookup table maps instruction → predicted delta_total.",
+            "severity": "CRITICAL",
+            "evidence": "No code in executor.ts, fal.ts, or contract.ts predicts neural outcome. The agent cannot say 'if I dim the lights -3dB, attention will improve +2.4 points'. It can only say 'let me try and find out'."
+          },
+          {
+            "item": "Agent has no mechanism to auto-suggest edit_scene calls. When the agent sees a CinemaReport with action_items[], it reads them as static text and relays them to the user. The agent never calls edit_scene() with a parsed/synthesized instruction from those action_items.",
+            "severity": "CRITICAL",
+            "evidence": "The agent's tool loop (message/route.ts:195-329) is pure LLM tool choice: the LLM decides whether to call edit_scene, and if it does, what instruction to pass. There is no code that parses action_items and auto-populates edit_scene args. The system is read-only from the agent's perspective; it cannot say 'I've read your action_items and I'm implementing Priority 1'."
+          },
+          {
+            "item": "No persistent edit history or rollback. Once fal produces an edited video, there is no versioning, no way to A/B three variants simultaneously, no undo. Each edit_scene call starts fresh from the baseline.",
+            "severity": "HIGH",
+            "evidence": "executor.ts:407-555: editScene always sources the baseline from job_id (a prior cinema run) or scene_clip_url. There is no state machine tracking [original → edit1 → edit2 → edit3]. Each call compares a fresh baseline to one new edited clip; the edited clips are not saved or tracked."
+          },
+          {
+            "item": "No integration of neural advice into the studio editor. The OpenCut iframe (editor.brainvi.ai) receives postMessage commands (LOAD_CLIPS, ADD_TEXT, SET_AUDIO, SEEK) but zero neural guidance. No API feeds the editor real-time neural feedback; no visualization shows 'if you hold this shot 0.5s longer, attention drops -8%'.",
+            "severity": "HIGH",
+            "evidence": "studio/bridge.ts:12-18 defines StudioCommand types; none carry neural data. The editor receives clips and commands, not neural scores or predictions. The neural data lives in the parent (chat), not the iframe."
+          },
+          {
+            "item": "Higgsfield (character-consistent generation) wiring is a TODO stub. Falls back to fal without tracing. If higgsfield is ever wired, there is no neural objective function guiding what 'character-consistent new shot' should optimize toward.",
+            "severity": "HIGH",
+            "evidence": "executor.ts:468-498: 'TODO(higgsfield): call the official Higgsfield MCP via a server route'. The fallback silently succeeds by using fal instead. No neural reward function guides the character generation; it would run blind."
+          },
+          {
+            "item": "Action_items from VLM reporter are JSON structured but never deserialized + executed. The vlm_action_items[] array (from vlm_reporter.py:73-87) sits in the report but no code reads dimension/timestamp_start/timestamp_end/fix and builds a fal instruction from them.",
+            "severity": "HIGH",
+            "evidence": "vlm_reporter.py:320-330 extracts raw_items and simple_items (text concatenation). executor.ts:550 returns the full report to the agent as JSON. No post-processing step in the agent or UI parses those and calls edit_scene."
+          },
+          {
+            "item": "The agent is told in mary-prompt.ts to use edit_scene but given zero guidance on how to construct the instruction parameter. The prompt says 'cool, desaturated grade and hold the close-up' is an example but does not teach the agent to parse neural action_items or predict the outcome.",
+            "severity": "MED",
+            "evidence": "mary-prompt.ts:1-31 (MARY_SYSTEM_PROMPT) has no instruction on how to read action_items or convert them to edit_scene calls. definitions.ts:130-131 shows the tool description but no guidance."
+          },
+          {
+            "item": "No test coverage for the edit loop. No test submits a baseline report, calls edit_scene, and verifies the re-score is returned and the compare is valid.",
+            "severity": "MED",
+            "evidence": "No test file exercises editScene() end-to-end. fal.ts has no test. executor.ts has no test. The live loop is only validated by hand (e.g. the demo user dropping a video, requesting an edit, waiting 5 min for fal, seeing the result)."
+          }
+        ],
+        "gaps_toward_vision": [
+          {
+            "gap": "Neural advisory layer: build a deterministic function (or a lightweight LLM-free lookup) that maps neural deficits (e.g. sustained_attention delta = -12%, at timestamp t=2.3s–3.1s, brain region = dlPFC) → concrete, fal-compatible edit instructions (e.g. 'insert a zoom-in cut at t=2.7s', 'raise music volume -4dB', 'shift color grade cooler'). This is the heart: neuroscience → video engineering.",
+            "why_it_matters": "Without this, the agent is blind. It reads 'sustained attention drops because of static framing' but cannot translate that into 'add camera dolly 0.1 m/s starting at t=2.3s'. The edit must be parametrized by neural signal, not guesswork.",
+            "rough_effort": "L"
+          },
+          {
+            "gap": "Feedforward neural prediction: before fal runs, give the agent a fast neural simulator that predicts 'if you execute instruction X, your neural_total will improve to Y.Z'. This lets the agent explore 3–5 candidate instructions, pick the highest-lift one, and execute with confidence. Today the agent commits blindly and only learns post-edit.",
+            "why_it_matters": "The closed loop (score → edit → re-score) is expensive (fal takes 3–5 min, GPU cost, latency). A fast predictor (regression model or analytical approximation) lets the agent rank edits before committing. Maximize lift per dollar, per edit, per user interaction.",
+            "rough_effort": "L"
+          },
+          {
+            "gap": "Bidirectional integration with the studio editor: send real-time neural feedback to the iframe (e.g. 'dragging the playhead to 2.7s shows sustained_attention would improve +3.2%'). Implement a postMessage contract for neural metrics and predictions so the editor UI can overlay neural curves, alerts, and recommendations directly on the timeline.",
+            "why_it_matters": "The editor is today a passive clip player + text-command receiver. For the vision ('agentic editor a film studio would use'), the studio must breathe with the neural feedback: every cut, every color grade, every audio adjustment is scored live, predicted, and visualized so the human editor has the same neural intuition the model has.",
+            "rough_effort": "L"
+          },
+          {
+            "gap": "Parse and execute VLM action_items: when the agent receives a CinemaReport with action_items[], deserialize them (dimension, timestamp, problem, fix). For the top 1–3 priorities, auto-generate edit_scene calls. Log the agent's decision (which action_item it picked, why, and what lift was observed). Build a learning loop: which recommendations actually improve the score?",
+            "why_it_matters": "The VLM reporter already does the hard work (Pegasus analysis + neural diagnosis). Today that work is lost to static text. Wiring it into the edit loop turns the action_items into a playbook the agent executes, learns from, and iterates on.",
+            "rough_effort": "M"
+          },
+          {
+            "gap": "Multi-variant exploration: allow the agent to explore 3–5 candidate edits in parallel (or sequential), each re-scored, each compared to the baseline. Return a ranked leaderboard: 'edit 3 (cooler grade) lifted total by +6.1, edit 1 (tighter cut) by +2.3, edit 5 (audio trim) dropped by -1.8'. Let the user pick the winner or ask the agent to blend them.",
+            "why_it_matters": "A studio editor would never take the first edit suggestion. The vision is to explore the edit space smartly, not greedily. Multi-variant A/B/C/D comparisons show the user that MARY is reasoning about tradeoffs (attention +8 but memory -3) and let them see the full landscape before committing.",
+            "rough_effort": "M"
+          },
+          {
+            "gap": "Emotional/reward dimension in the neural advice. Today the neural score is 6 dimensions + 18 cinema metrics. The advice layer should map those metrics to specific emotions (e.g. 'raising sustained_attention +4 here would boost the audience's felt sense of urgency by ~15%'). Make the advice legible to the human filmmakers; tie neural gains to felt impact.",
+            "why_it_matters": "A filmmaker cares about 'does this make the scene scarier/funnier/sadder', not 'does dlPFC activation increase'. The neural advisor must translate brain signals into emotional outcomes so the filmmakers trust the recommendations and can defend edits in the room.",
+            "rough_effort": "M"
+          },
+          {
+            "gap": "Closed-loop learning: log every edit_scene call, the instruction, the baseline score, the edited score, and the lift. After 10–20 edits on a given film, retrain or finetune the advisory layer so it learns which instructions actually work on this footage's style, pacing, and cast. Build a per-film neural editor that improves with use.",
+            "why_it_matters": "The first edit is a guess. The 20th edit on the same production should be confident, specific, and high-lift because the model has seen 19 edit attempts on that footage. Continuous learning transforms the editor from a black box to a trusted collaborator.",
+            "rough_effort": "L"
+          }
+        ],
+        "key_files": [
+          "/Users/yahvingali/brainvi-monorepo/apps/chat/src/lib/tools/executor.ts",
+          "/Users/yahvingali/brainvi-monorepo/apps/chat/src/lib/cinema/contract.ts",
+          "/Users/yahvingali/brainvi-monorepo/apps/chat/src/lib/v2v/fal.ts",
+          "/Users/yahvingali/brainvi-monorepo/apps/chat/src/lib/tools/definitions.ts",
+          "/Users/yahvingali/brainvi-monorepo/apps/chat/src/lib/mary-prompt.ts",
+          "/Users/yahvingali/brainvi-monorepo/apps/chat/src/app/api/chat/message/route.ts",
+          "/Users/yahvingali/brainvi-monorepo/services/cortical/backend/pipeline/vlm_reporter.py",
+          "/Users/yahvingali/brainvi-monorepo/apps/chat/src/lib/cinema/studio/bridge.ts",
+          "/Users/yahvingali/brainvi-monorepo/apps/chat/src/components/chat/cinema/ABCompare.tsx"
+        ]
+      },
+      {
+        "component": "BrainVI Cinema/OpenCut Studio System — Product Specs, Plans, and Implementation Status",
+        "summary": "The cinema/OpenCut studio system is a multi-phase agentic video-editing suite designed to integrate MARY Nano neural scoring directly into post-production workflows. Phase 1 (Live Theater) is shipped with real-time streaming scene analysis via TwelveLabs + cortical metrics; Phase 1.5 (MARY Nano 1.1 hero-clip demo on \"The Present\") is fully built and tested; Phase 2a (StudioModal embedding + bridge) is live but hardwired to a demo film; Phase 2b (unified agent history + neural-advice loop) is designed but not implemented. The core agentic vision—where MARY scores edits in real time and advises on specific actions to maximize emotional reward—remains architecturally unfinished: only 5 bridge commands (PING/LOAD_CLIPS/ADD_TEXT/SET_AUDIO/SEEK) exist; no trim/split/color/volume transitions; no neural-advice loop that applies edits, re-scores, and shows the lift. Current demo paths are cached (\"The Present\") or hardwired to NOTLD; the real live scoring path exists but is not yet wired to real-time agentic suggestions.",
+        "works": [
+          {
+            "item": "Live Theater (Phase 1) streaming infrastructure — SSE cinema stream, TwelveLabs Marengo+Pegasus analysis, cortical metrics per-scene",
+            "evidence": "apps/chat/src/lib/cinema/streaming/ (source.ts, replay.ts, accumulate.ts, choreography.ts); backend routes /api/cinema/stream"
+          },
+          {
+            "item": "The Present (MARY Nano 1.1) hero-clip recognition and routing — isThePresent() detects by filename/title; resolveDemoFilm() routes to 'the-present'",
+            "evidence": "apps/chat/src/lib/cinema/the-present-match.ts:7-23"
+          },
+          {
+            "item": "Real MARY Nano 1.1 report with fsaverage6 (81,924) vertices, model label, 1-dp scores — persisted to the-present-report.json",
+            "evidence": "apps/chat/src/lib/cinema/the-present-report.json (model='MARY Nano 1.1', atlas='fsaverage6', n_vertices=81924)"
+          },
+          {
+            "item": "fsaverage6 affective report builder — build_affective_report() parses (T, 81924) BOLD into 6-D score, arousal/attention/cognitive curves, key moments, 1-dp formatting",
+            "evidence": "services/cortical/backend/pipeline/cinema_report_fsavg6.py:35-106 (live, passing tests)"
+          },
+          {
+            "item": "Nano 1.1 inference pipeline — infer_nano11.py (batch assembly, readout load, predict_bold), tested on CPU (smoke import), ready for GPU execution",
+            "evidence": "ugc-peer/orcle/scripts/infer_nano11.py:86-100 (run function, full chain; target_tr pooling, subject stacking)"
+          },
+          {
+            "item": "Demo data loader — loadDemoReport('the-present') returns { report: thePresentReport, model: 'MARY Nano 1.1' }; 'notld' returns model=null",
+            "evidence": "apps/chat/src/lib/cinema/demo-data.ts:13-21"
+          },
+          {
+            "item": "Chat tooling integration — analyzeCinema() route detection; 'the-present' film returns thePresentScore + honest model label; non-demo films route to live cinema stream",
+            "evidence": "apps/chat/src/lib/tools/executor.ts:345-351 (the-present special-case); 353-358 (live demo film path)"
+          },
+          {
+            "item": "StudioBridge postMessage protocol — origin-validated PING/PONG/LOAD_CLIPS/ADD_TEXT/SET_AUDIO/SEEK verbs; iframe←→parent lifecycle management",
+            "evidence": "apps/chat/src/lib/cinema/studio/bridge.ts:13-28 (command + message type definitions); 46-77 (createStudioBridge, event routing)"
+          },
+          {
+            "item": "Editor/OpenCut deployment — vendored opencut-brainvi fork at apps/editor; iframe loads at editor.brainvi.ai/editor?embed=1; BRIDGE_READY resolves (not stuck)",
+            "evidence": "apps/editor/_VENDORED_README.md; cinema-live-test-findings.md line 7 (iframe loads fully, BRIDGE_READY resolves)"
+          },
+          {
+            "item": "Cinema contract types — CinemaReport, NeuralScore, CinemaCurves, KeyMoment, isCinemaReport guard, fmtScore (1dp), scoreColor (house rules)",
+            "evidence": "apps/chat/src/lib/cinema/contract.ts:1-170"
+          }
+        ],
+        "tested": [
+          {
+            "item": "The Present report shape validation — model='MARY Nano 1.1', n_vertices=81924, atlas='fsaverage6', curves length match, key_moments present",
+            "test_file": "apps/chat/src/lib/cinema/the-present.test.ts:19-27",
+            "passing": "passing — test validates real loaded JSON structure"
+          },
+          {
+            "item": "Demo film recognition (routing) — isThePresent() matches variants, resolveDemoFilm() routes 'the-present'/'notld'/null correctly",
+            "test_file": "apps/chat/src/lib/cinema/the-present.test.ts:6-17",
+            "passing": "passing"
+          },
+          {
+            "item": "fsaverage6 affective report builder — 1-dp scores, curve lengths == T_TR, key-moment timestamps in range, neural_score keys present",
+            "test_file": "services/cortical/backend/tests/test_cinema_report_fsavg6.py:7-30",
+            "passing": "passing — uv run python -m pytest tests/test_cinema_report_fsavg6.py::test_report_shape_and_one_decimal PASSED"
+          },
+          {
+            "item": "Studio bridge — origin validation, command send/receive, listener registration, destroy cleanup (unit-testable without real browser)",
+            "test_file": "apps/chat/src/lib/cinema/studio/bridge.test.ts",
+            "passing": "unknown — file exists but test invocation details not verified in this audit"
+          },
+          {
+            "item": "Cinema streaming accumulate/replay/source — reducer purity, scene ordering, partial→report conversion logic",
+            "test_file": "apps/chat/src/lib/cinema/streaming/{accumulate,replay,source,partialToReport}.test.ts",
+            "passing": "unknown — tests exist but not run in this audit"
+          }
+        ],
+        "untested_or_broken": [
+          {
+            "item": "GPU inference run (U1.4 in spec) — the actual one-shot Nano 1.1 forward on The Present.mp4 → (T_TR, 81924) fsavg6 BOLD persisted to B2",
+            "severity": "CRITICAL",
+            "evidence": "mary-nano-cinema-demo-spec.md §2 U1, plans/2026-06-10-mary-nano-cinema-demo.md Task U1.4 — marked as 'manual coordinator step', GATED ('user-facing demo GATED on the one-shot GPU run U1.4'); no automated test verifies the real GPU output shape/sanity"
+          },
+          {
+            "item": "Real fsaverage6 atlas parameterization in backend — atlas_mapping.py's load_surface_labels(density) and get_roi_vertex_indices() fsaverage6 adapter (U2.1)",
+            "severity": "HIGH",
+            "evidence": "test_atlas_mapping_fsavg6.py exists with test written per plan, but cinema_report_fsavg6.py at line 70 calls compute_all_metrics() with NO density kwarg, relying on auto-detect (density_for_predictions). The U2.1 implementation step may be incomplete or the auto-detect may not work — no explicit evidence that fsaverage6 parametrization shipped."
+          },
+          {
+            "item": "Affective natural-language read grounded in real curves — _affective_summary() in cinema_report_fsavg6.py generates one-liner, but Mary's follow-up response in the chat is not verified to cite real curve features",
+            "severity": "MED",
+            "evidence": "cinema_report_fsavg6.py:23-32 (_affective_summary); executor.ts:340-351 (The Present returns thePresentScore); No test verifies that Mary's actual LLM response cites a specific curve timestamp/trend from the stored affect data."
+          },
+          {
+            "item": "Live demo film (not NOTLD hardwired) — StudioChatModal uses film='notld' hardcode; the-present recognized but no UI path to select it for studio editing",
+            "severity": "HIGH",
+            "evidence": "cinema-live-test-findings.md lines 15-16: '[VISION GAP] Studio is hardwired to the \"notld\" demo film (StudioChatModal film=\"notld\"); not yet a general \"drop your media\" editor.'"
+          },
+          {
+            "item": "Neural advice loop (core vision) — no trim/split/color/volume/transition commands in bridge; no apply→re-score→show-lift flow",
+            "severity": "CRITICAL",
+            "evidence": "bridge.ts:16 (only 5 verbs: ADD_TEXT, SET_AUDIO, LOAD_CLIPS, SEEK, no trim/color/volume); cinema-live-test-findings.md lines 16: '[VISION GAP] Agentic surface = only 5 bridge verbs... No trim/split/color/volume/transition/export, and no neural-advice loop.'"
+          },
+          {
+            "item": "Actual agentic edit→re-score→lift demo — spec calls for 'edit_scene' (fal V2V color grade / audio) → re-scores → shows neural delta; not demonstrated end-to-end",
+            "severity": "HIGH",
+            "evidence": "suite-production-design.md §3 C4–C5 (In-editor scoring + agent, Generative insertion); cinema-live-test-findings.md line 8 (bridge reply TEXT_ADDED works) but no color grade or re-score delta shown"
+          },
+          {
+            "item": "Clerk prod instance (not dev) — still pointing to dev.clerk.accounts.dev in editor embed",
+            "severity": "HIGH",
+            "evidence": "cinema-live-test-findings.md line 14: '[HIGH-known] Clerk is still a DEV instance (precise-cod-14.clerk.accounts.dev) — prod migration outstanding.'"
+          },
+          {
+            "item": "OpenCut branding suppression in embed — onboarding dialog + banner + analytics still fire when embed=1",
+            "severity": "MED",
+            "evidence": "cinema-live-test-findings.md lines 11-13: 'OpenCut onboarding dialog... brand leak', 'OpenCut branding visible', 'analytics still fires... privacy + brand leak'"
+          },
+          {
+            "item": "Real user scoring path (not cached) — the-present-report.json is a ONE-OFF cached demo; no live end-to-end for arbitrary user video dropping (U3.3 E2E verification unclear)",
+            "severity": "HIGH",
+            "evidence": "mary-nano-cinema-demo-spec.md §2: 'Chat wiring: dropping The Present (matched by name/hash) serves the cached real report'; not a live scoring path, a short-circuit"
+          },
+          {
+            "item": "Search_memory (real) — listed as a Foundation §0 requirement in suite-production-design.md but marked stub/unimplemented; required for 'compare across multiple scored media in one conversation'",
+            "severity": "HIGH",
+            "evidence": "suite-production-design.md line 17: 'search_memory is a stub'; line 25: 'compare across multiple scored media' feature depends on this"
+          },
+          {
+            "item": "Affect persistence in database — reports table's affect column population and mediaAssets/neuralMaps rows on score success not verified",
+            "severity": "HIGH",
+            "evidence": "suite-production-design.md §0 line 16: 'Thread userId+conversationId into the tool executor'; Touchpoint at executor.ts but no evidence of actual persist call implemented or tested"
+          },
+          {
+            "item": "Affective context injection on follow-up turns — 'load conversation's persisted reports and inject compact affect summary into agent context' (suite-production-design.md §0 line 18) — not verified live",
+            "severity": "HIGH",
+            "evidence": "Design spec only; no test; requires search_memory + affect column to work; no evidence of implementation in routes/api/chat/message"
+          }
+        ],
+        "gaps_toward_vision": [
+          {
+            "gap": "Neural-advice layer missing — MARY Nano currently scores cuts but does NOT generate patch suggestions (trim points, color-grade temperature, audio level, pacing cuts) that directly maximize emotional reward. The spec calls for 'MARY gives DIRECTLY-CONTRIBUTING advice on specific actions'; today it's score-only, no actionable counsel.",
+            "why_it_matters": "The core vision is a closed loop: analyze → advise → apply edit → re-score → show the lift. Without advice, it's just a scoring tool, not a post-production augmentation that a studio editor would use.",
+            "rough_effort": "L"
+          },
+          {
+            "gap": "Bridge command set incomplete — only 5 verbs (ADD_TEXT, SET_AUDIO, LOAD_CLIPS, SEEK, PING); missing trim, split, color grade, volume, transitions, export. Agentic edge-mutation (Ruflo deciding to extend/branch the timeline) not wired.",
+            "why_it_matters": "An editor can only reorder clips and add text/audio; can't adjust pacing, color, balance, or beat-sync. Not a production-viable workflow.",
+            "rough_effort": "M"
+          },
+          {
+            "gap": "Apply→re-score→lift loop not implemented — spec calls for 'fal V2V color grade / audio → re-score → NeuralScorePanel before/after'; editor can ask Mary to apply an edit but the re-score and comparison delta is not visible end-to-end.",
+            "why_it_matters": "Editors need to see the reward gain from their edits in real time to make informed choices. Without the lift visualization, they have no feedback on whether a suggestion actually worked.",
+            "rough_effort": "M"
+          },
+          {
+            "gap": "Affect persistence and search absent — suite-production-design.md §0 specifies persist reports.affect + search_memory + affect context injection for emotive follow-up; all three are stub/not-verified. Follow-up queries like 'is this calmer than the last clip?' cannot be answered from stored data.",
+            "why_it_matters": "The affective dashboard and per-turn emotive conversations depend on stored affect; without persistence, every new query is disconnected from prior scores.",
+            "rough_effort": "M"
+          },
+          {
+            "gap": "Studio hardwired to NOTLD demo; real media upload/analyze path not exposed — analyzeCinema handles 'the-present' as a cached short-circuit, not a live example. User cannot drop their own video and watch MARY score it in the studio editor.",
+            "why_it_matters": "The studio is currently a branded demo showcase, not a product. Tester-facing feature demos need to show 'user uploads clip → studio analyzes live → agent suggests edits → user applies and sees lift'.",
+            "rough_effort": "S"
+          },
+          {
+            "gap": "OpenCut branding/analytics not suppressed in embed — dialog, banner, and Databuddy analytics still fire when ?embed=1. Looks like a third-party tool, not BrainVI's native editor.",
+            "why_it_matters": "Brand coherence and privacy — users should see a unified BrainVI interface, and telemetry should not leak to third-party CDNs.",
+            "rough_effort": "S"
+          },
+          {
+            "gap": "Clerk still on dev instance — prod migration outstanding. Blocks public beta / production tester access.",
+            "why_it_matters": "Production-grade deployment requires prod auth; cannot safely give real tester credentials on a dev OAuth instance.",
+            "rough_effort": "S"
+          },
+          {
+            "gap": "U1.4 (GPU inference run) not executed — the real one-shot Nano 1.1 score of The Present.mp4 → B2 artifacts. Plan exists, script exists, GATED; waiting for manual GPU pod run.",
+            "why_it_matters": "Without the real BOLD output from a CUDA pod, the demo report is still a mock/placeholder. The credibility of 'real MARY Nano 1.1' depends on an actual run.",
+            "rough_effort": "M"
+          },
+          {
+            "gap": "Per-subject SRM calibration endpoint not implemented — spec mentions (nano-1.1-inference-serving-stack.md) 'per-subject SRM calibration endpoint' as out-of-scope for Slice 1, but Nano 1.1's novel-subject win (0.022→0.159) depends on it. Slice 2 Serving doc deferred.",
+            "why_it_matters": "The full agentic loop requires personalization — MARY should score better for individual users who have a few calibration runs. Without this, the model stays at group-level (0.178 novel-film), losing the leverage that makes it better than TRIBE.",
+            "rough_effort": "L"
+          },
+          {
+            "gap": "Runbook (The Present GPU orchestration) not fully verified — docs/runbooks/the-present-nano11.md exists per plan, but no evidence that the exact pod provisioning + boot + extract + inference + upload sequence has been run end-to-end as written.",
+            "why_it_matters": "The runbook is the institutional knowledge for reproducing the demo. If it's stale or incomplete, future runs will fail or diverge.",
+            "rough_effort": "S"
+          },
+          {
+            "gap": "3D brain viz + per-scene affect curves + action items in the report card not verified live — the contract exists (CinemaReport), but the UI components that render 'affect dashboard: valence/arousal/reward + top-K emotions with %' are listed as TODO in the suite spec (A3 'Affect dashboard UI in the report card').",
+            "why_it_matters": "The affective core is supposed to be the headline for studio editors. If they don't see a clear emotional arc and top-emotion breakdown, the 'what do you feel' demo query lacks impact.",
+            "rough_effort": "M"
+          }
+        ],
+        "key_files": [
+          "/Users/yahvingali/brainvi-monorepo/research/mary/docs/mary-nano-cinema-demo-spec.md",
+          "/Users/yahvingali/brainvi-monorepo/research/mary/docs/plans/2026-06-10-mary-nano-cinema-demo.md",
+          "/Users/yahvingali/brainvi-monorepo/docs/superpowers/specs/2026-06-18-suite-production-design.md",
+          "/Users/yahvingali/brainvi-monorepo/docs/superpowers/audits/cinema-live-test-findings.md",
+          "/Users/yahvingali/brainvi-monorepo/apps/chat/src/lib/cinema/the-present-match.ts",
+          "/Users/yahvingali/brainvi-monorepo/apps/chat/src/lib/cinema/demo-data.ts",
+          "/Users/yahvingali/brainvi-monorepo/apps/chat/src/lib/cinema/contract.ts",
+          "/Users/yahvingali/brainvi-monorepo/apps/chat/src/lib/cinema/studio/bridge.ts",
+          "/Users/yahvingali/brainvi-monorepo/services/cortical/backend/pipeline/cinema_report_fsavg6.py",
+          "/Users/yahvingali/ugc-peer/orcle/scripts/infer_nano11.py",
+          "/Users/yahvingali/brainvi-monorepo/apps/chat/src/lib/tools/executor.ts",
+          "/Users/yahvingali/brainvi-monorepo/apps/chat/src/lib/cinema/the-present.test.ts",
+          "/Users/yahvingali/brainvi-monorepo/services/cortical/backend/tests/test_cinema_report_fsavg6.py"
+        ]
+      }
+    ],
+    "count": 6
+  }
+}

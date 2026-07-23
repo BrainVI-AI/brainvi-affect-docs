@@ -1,0 +1,86 @@
+{
+  "owner": "OpenAI Codex",
+  "scope": "T1 expressed affect, research-only face transfer checkpoints",
+  "signed": "2026-07-19",
+  "rights_status": "Research-only: AFEW-VA and VEATIC supervision is not cleared for commercial distribution.",
+  "b2_prefix": "s3://Neuropeer/orcle/research/scaling_sota_head/expressed_t1/checkpoints/",
+  "checkpoints": [
+    {
+      "file": "afew_va_to_veatic_ridge_coral_seed17.pt",
+      "source": "adaptation",
+      "sha256": "9be0a46a45b583c7a123b048d268eb671af80c7cfeeec9728c9e6670dfc10cff",
+      "bytes": 2150812
+    },
+    {
+      "file": "afew_va_to_veatic_ridge_tta_seed17.pt",
+      "source": "adaptation",
+      "sha256": "aa358942242219817748c9573b7e611bc751c712392b5dc614e10c7ff2040c2a",
+      "bytes": 2151044
+    },
+    {
+      "file": "veatic_to_afew_va_ridge_coral_seed17.pt",
+      "source": "adaptation",
+      "sha256": "d49b92d11f82ce769ad68ee0f91565c7c87dd378fae34c59d233ff6688302ece",
+      "bytes": 2150812
+    },
+    {
+      "file": "veatic_to_afew_va_ridge_tta_seed17.pt",
+      "source": "adaptation",
+      "sha256": "656b85475cc9f2322fe365556fa79b0eafb2289e1d981cd1de7ddcb856b9e1f6",
+      "bytes": 2151044
+    },
+    {
+      "file": "afew_va_to_veatic_ridge_coral_seed29.pt",
+      "source": "stability",
+      "sha256": "f82a1231ac72e468782a18a3168ad9c03540d582fe9a4bc8fc16da85f546a51e",
+      "bytes": 2151068
+    },
+    {
+      "file": "afew_va_to_veatic_ridge_coral_seed43.pt",
+      "source": "stability",
+      "sha256": "a047f5afb0c542080ae314af35e0b9d3f38018b269bfcfa62de1c472da163f4f",
+      "bytes": 2151068
+    },
+    {
+      "file": "afew_va_to_veatic_ridge_seed29.pt",
+      "source": "stability",
+      "sha256": "653af46477d5a561abdc64159e4e8cf86501cdd3bbdb0b66c3f88a5642fdca75",
+      "bytes": 2151508
+    },
+    {
+      "file": "afew_va_to_veatic_ridge_seed43.pt",
+      "source": "stability",
+      "sha256": "36531c8bfbc7fee8f4a8844c88a97fb81fd76962409fd82887e4653570eccfa2",
+      "bytes": 2151508
+    },
+    {
+      "file": "veatic_to_afew_va_ridge_coral_seed29.pt",
+      "source": "stability",
+      "sha256": "238c6b893a25992007c4cbcf8e9b5cf1ad0fcd8e4e76124e56f6db7996405b75",
+      "bytes": 2151068
+    },
+    {
+      "file": "veatic_to_afew_va_ridge_coral_seed43.pt",
+      "source": "stability",
+      "sha256": "38182c9d84299be621735d0336a863c8684d4dd9ffce2460494cecca235e80ff",
+      "bytes": 2150812
+    },
+    {
+      "file": "veatic_to_afew_va_ridge_seed29.pt",
+      "source": "stability",
+      "sha256": "fcbcb76af757f24f54efbbf48bc2afa62b03bf6c7e11d43c7183f663ae07adc0",
+      "bytes": 2151508
+    },
+    {
+      "file": "veatic_to_afew_va_ridge_seed43.pt",
+      "source": "stability",
+      "sha256": "c79881b854b4f9096dafc6cb571ce88bd21ec254ccf9cbab48271514264123da",
+      "bytes": 2150996
+    }
+  ],
+  "commercial_package_status": "RUNTIME_VERIFIED_NOT_FROZEN_FOR_DISTRIBUTION",
+  "commercial_blockers": [
+    "Training-data rights are unresolved.",
+    "Combined routed package is maintained under the legacy routed_expressed_va B2 prefix; the expressed_t1 prefix contains the newer T1 index and research artifacts."
+  ]
+}

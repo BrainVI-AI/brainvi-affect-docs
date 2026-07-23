@@ -1,0 +1,232 @@
+{
+  "dataset": "AFEW-VA_to_VEATIC",
+  "construct": "expressed",
+  "protocol": "source-only masked video-stream ablation; target labels used only for final metrics/nulls",
+  "source_rows": 2769,
+  "target_rows": 5096,
+  "seeds": [17, 29, 43],
+  "null": "group circular within target clip, 10000 draws",
+  "ablations": {
+    "slowfast_only": ["video:slowfast"],
+    "vl_only": ["video:vl"],
+    "video_fused": ["video:slowfast", "video:vl"]
+  },
+  "results": [
+    {
+      "ablation": "slowfast_only",
+      "seed": 17,
+      "axis": "valence",
+      "pearson_r": 0.12146601589576031,
+      "null_p": 0.0025997400259974,
+      "ci95": [0.03207460941713773, 0.2057608119317767],
+      "weights": [[1.0, 1.0]],
+      "selection_strategy": "source_group_holdout",
+      "elapsed_seconds": 12.2
+    },
+    {
+      "ablation": "slowfast_only",
+      "seed": 17,
+      "axis": "arousal",
+      "pearson_r": 0.221312383045503,
+      "null_p": 0.1110888911108889,
+      "ci95": [0.13623273383412343, 0.3024966146821378],
+      "weights": [[1.0, 1.0]],
+      "selection_strategy": "source_group_holdout",
+      "elapsed_seconds": 23.36
+    },
+    {
+      "ablation": "slowfast_only",
+      "seed": 29,
+      "axis": "valence",
+      "pearson_r": 0.12150633548565684,
+      "null_p": 0.0021997800219978004,
+      "ci95": [0.033207545422201175, 0.21193596377190776],
+      "weights": [[1.0, 1.0]],
+      "selection_strategy": "source_group_holdout",
+      "elapsed_seconds": 12.09
+    },
+    {
+      "ablation": "slowfast_only",
+      "seed": 29,
+      "axis": "arousal",
+      "pearson_r": 0.2213364078476531,
+      "null_p": 0.10868913108689131,
+      "ci95": [0.1397437647003957, 0.2986067304543611],
+      "weights": [[1.0, 1.0]],
+      "selection_strategy": "source_group_holdout",
+      "elapsed_seconds": 23.47
+    },
+    {
+      "ablation": "slowfast_only",
+      "seed": 43,
+      "axis": "valence",
+      "pearson_r": 0.12144227887977829,
+      "null_p": 0.0022997700229977,
+      "ci95": [0.030958539385085516, 0.21039016062661242],
+      "weights": [[1.0, 1.0]],
+      "selection_strategy": "source_group_holdout",
+      "elapsed_seconds": 12.15
+    },
+    {
+      "ablation": "slowfast_only",
+      "seed": 43,
+      "axis": "arousal",
+      "pearson_r": 0.2213391248173959,
+      "null_p": 0.10818918108189181,
+      "ci95": [0.13761377350439435, 0.30114230925688046],
+      "weights": [[1.0, 1.0]],
+      "selection_strategy": "source_group_holdout",
+      "elapsed_seconds": 23.44
+    },
+    {
+      "ablation": "vl_only",
+      "seed": 17,
+      "axis": "valence",
+      "pearson_r": 0.25202247590131605,
+      "null_p": 9.999000099990002e-5,
+      "ci95": [0.14157829472518196, 0.35495331222795856],
+      "weights": [[1.0, 1.0]],
+      "selection_strategy": "source_group_holdout",
+      "elapsed_seconds": 12.19
+    },
+    {
+      "ablation": "vl_only",
+      "seed": 17,
+      "axis": "arousal",
+      "pearson_r": 0.29167416979639543,
+      "null_p": 9.999000099990002e-5,
+      "ci95": [0.20329289425602584, 0.3739443421844502],
+      "weights": [[1.0, 1.0]],
+      "selection_strategy": "source_group_holdout",
+      "elapsed_seconds": 23.77
+    },
+    {
+      "ablation": "vl_only",
+      "seed": 29,
+      "axis": "valence",
+      "pearson_r": 0.3923557475457706,
+      "null_p": 9.999000099990002e-5,
+      "ci95": [0.3143959205658218, 0.4604944186818689],
+      "weights": [[1.0, 1.0]],
+      "selection_strategy": "source_group_holdout",
+      "elapsed_seconds": 12.63
+    },
+    {
+      "ablation": "vl_only",
+      "seed": 29,
+      "axis": "arousal",
+      "pearson_r": 0.3286295992349543,
+      "null_p": 9.999000099990002e-5,
+      "ci95": [0.2434396116376732, 0.406920067189067],
+      "weights": [[1.0, 1.0]],
+      "selection_strategy": "source_group_holdout",
+      "elapsed_seconds": 24.73
+    },
+    {
+      "ablation": "vl_only",
+      "seed": 43,
+      "axis": "valence",
+      "pearson_r": 0.39246668895921866,
+      "null_p": 9.999000099990002e-5,
+      "ci95": [0.31630476106882705, 0.4637619689013602],
+      "weights": [[1.0, 1.0]],
+      "selection_strategy": "source_group_holdout",
+      "elapsed_seconds": 13.05
+    },
+    {
+      "ablation": "vl_only",
+      "seed": 43,
+      "axis": "arousal",
+      "pearson_r": 0.32898647833907885,
+      "null_p": 9.999000099990002e-5,
+      "ci95": [0.23819110317030429, 0.41155355156415374],
+      "weights": [[1.0, 1.0]],
+      "selection_strategy": "source_group_holdout",
+      "elapsed_seconds": 24.72
+    },
+    {
+      "ablation": "video_fused",
+      "seed": 17,
+      "axis": "valence",
+      "pearson_r": 0.2642976907770916,
+      "null_p": 9.999000099990002e-5,
+      "ci95": [0.15461571085093362, 0.3671292969708182],
+      "weights": [
+        [0.4000000059604645, 0.5],
+        [0.6000000238418579, 0.5]
+      ],
+      "selection_strategy": "source_group_holdout",
+      "elapsed_seconds": 13.99
+    },
+    {
+      "ablation": "video_fused",
+      "seed": 17,
+      "axis": "arousal",
+      "pearson_r": 0.3312321187008683,
+      "null_p": 9.999000099990002e-5,
+      "ci95": [0.24560578411899056, 0.40990249141395363],
+      "weights": [
+        [0.4000000059604645, 0.5],
+        [0.6000000238418579, 0.5]
+      ],
+      "selection_strategy": "source_group_holdout",
+      "elapsed_seconds": 25.64
+    },
+    {
+      "ablation": "video_fused",
+      "seed": 29,
+      "axis": "valence",
+      "pearson_r": 0.39514480309491257,
+      "null_p": 9.999000099990002e-5,
+      "ci95": [0.3174906432346294, 0.46354978713490635],
+      "weights": [
+        [0.10000000149011612, 0.20000000298023224],
+        [0.8999999761581421, 0.800000011920929]
+      ],
+      "selection_strategy": "source_group_holdout",
+      "elapsed_seconds": 12.83
+    },
+    {
+      "ablation": "video_fused",
+      "seed": 29,
+      "axis": "arousal",
+      "pearson_r": 0.34773083320198866,
+      "null_p": 9.999000099990002e-5,
+      "ci95": [0.26454736055326544, 0.42431574126961813],
+      "weights": [
+        [0.10000000149011612, 0.20000000298023224],
+        [0.8999999761581421, 0.800000011920929]
+      ],
+      "selection_strategy": "source_group_holdout",
+      "elapsed_seconds": 24.41
+    },
+    {
+      "ablation": "video_fused",
+      "seed": 43,
+      "axis": "valence",
+      "pearson_r": 0.3938701933363872,
+      "null_p": 9.999000099990002e-5,
+      "ci95": [0.3177640622804402, 0.4669007641277667],
+      "weights": [
+        [0.4000000059604645, 0.20000000298023224],
+        [0.6000000238418579, 0.800000011920929]
+      ],
+      "selection_strategy": "source_group_holdout",
+      "elapsed_seconds": 12.51
+    },
+    {
+      "ablation": "video_fused",
+      "seed": 43,
+      "axis": "arousal",
+      "pearson_r": 0.348054829846236,
+      "null_p": 9.999000099990002e-5,
+      "ci95": [0.25742894328214755, 0.42703577675801635],
+      "weights": [
+        [0.4000000059604645, 0.20000000298023224],
+        [0.6000000238418579, 0.800000011920929]
+      ],
+      "selection_strategy": "source_group_holdout",
+      "elapsed_seconds": 23.64
+    }
+  ]
+}
